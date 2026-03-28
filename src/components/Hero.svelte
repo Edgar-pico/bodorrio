@@ -49,14 +49,5 @@
       Hoy damos un paso importante en nuestra historia…
       y nos haría muy feliz compartirlo contigo.
     </p>
-    
-    <!-- Botón -->
-    <a 
-      href="#countdown"
-      class="inline-block mt-10 px-8 py-3 border-2 border-stone-600 text-stone-700 rounded-full hover:bg-stone-700 hover:text-white transition-all duration-300 tracking-wide font-medium"
-      in:fade={{ duration: 800, delay: 1300 }}
-    >
-      Ver detalles ↓
-    </a>
   </div>
 </section>
