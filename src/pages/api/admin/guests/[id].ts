@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getAdminSession } from '../../../../lib/server/admin-auth';
 import { hasSameOrigin, json } from '../../../../lib/server/http';
+import { contactsForRpc, parseInvitationContacts } from '../../../../lib/server/invitations';
 import { getWeddingDatabase } from '../../../../lib/server/supabase';
 
 export const prerender = false;
@@ -18,9 +19,10 @@ export const PATCH: APIRoute = async ({ request, cookies, params }) => {
     const body = (await request.json()) as {
       action?: unknown;
       fullName?: unknown;
-      phone?: unknown;
+      contacts?: unknown;
       invitationType?: unknown;
-      allowedPasses?: unknown;
+      allowedAdults?: unknown;
+      allowedChildren?: unknown;
       isActive?: unknown;
     };
     const database = getWeddingDatabase();
@@ -35,32 +37,35 @@ export const PATCH: APIRoute = async ({ request, cookies, params }) => {
     }
 
     const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
-    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const contacts = parseInvitationContacts(body.contacts);
     const invitationType = body.invitationType === 'ceremony_only' ? 'ceremony_only' : 'reception';
-    const allowedPasses = invitationType === 'ceremony_only' ? 0 : Number(body.allowedPasses);
+    const allowedAdults = invitationType === 'ceremony_only' ? 0 : Number(body.allowedAdults);
+    const allowedChildren = invitationType === 'ceremony_only' ? 0 : Number(body.allowedChildren);
     const isActive = body.isActive !== false;
 
-    if (fullName.length < 5 || fullName.length > 120 || !/^\+?\d[\d\s()-]{8,18}$/.test(phone)) {
-      return json({ message: 'Revisa el nombre y el teléfono del invitado.' }, 400);
+    if (fullName.length < 5 || fullName.length > 120 || !contacts) {
+      return json({ message: 'Revisa el nombre de la invitación y los datos de cada destinatario.' }, 400);
     }
-    if (!Number.isInteger(allowedPasses) || allowedPasses < 0 || allowedPasses > 20) {
-      return json({ message: 'La cantidad de pases no es válida.' }, 400);
+    if (!Number.isInteger(allowedAdults) || !Number.isInteger(allowedChildren) || allowedAdults < 0 || allowedChildren < 0 || allowedAdults + allowedChildren > 20 || (invitationType === 'reception' && allowedAdults + allowedChildren < 1)) {
+      return json({ message: 'La cantidad de pases de adultos y niños no es válida.' }, 400);
     }
 
     const { error } = await database.rpc('admin_save_wedding_guest', {
       p_guest_id: params.id,
       p_full_name: fullName,
-      p_phone: phone,
+      p_contacts: contactsForRpc(contacts),
       p_invitation_type: invitationType,
-      p_allowed_passes: allowedPasses,
+      p_allowed_adults: allowedAdults,
+      p_allowed_children: allowedChildren,
       p_is_active: isActive
     });
 
     if (error) {
       if (error.message.includes('RECEPTION_CAPACITY')) return json({ message: 'No hay suficientes pases disponibles en el cupo del salón.' }, 409);
-      if (error.message.includes('CONFIRMED_PASSES_CONFLICT')) return json({ message: 'No puedes asignar menos pases que los ya confirmados ni convertir esa confirmación a solo misa.' }, 409);
+      if (error.message.includes('CONFIRMED_PASSES_CONFLICT')) return json({ message: 'No puedes reducir adultos o niños por debajo de lo ya confirmado, ni convertir esa confirmación a solo misa.' }, 409);
       if (error.message.includes('PHONE_MUST_HAVE_10_DIGITS')) return json({ message: 'El teléfono debe tener 10 dígitos.' }, 400);
-      if (error.message.includes('wedding_guests_phone_unique')) return json({ message: 'Ese teléfono ya pertenece a otra invitación activa.' }, 409);
+      if (error.message.includes('PHONE_ALREADY_ASSIGNED')) return json({ message: 'Uno de los teléfonos ya pertenece a otra invitación activa.' }, 409);
+      if (error.message.includes('wedding_invitation_contacts_guest_id_phone_normalized_key')) return json({ message: 'No repitas el mismo teléfono dentro de una invitación.' }, 409);
       throw error;
     }
 

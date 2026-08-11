@@ -161,11 +161,11 @@ img, video { display: block; max-width: 100%; }
 .rsvp { border-top: 1px solid rgba(70,80,68,.12); background: var(--paper); }
 .rsvp .story-button { margin-top: 2rem; }
 .invitation-search { position: relative; max-width: 680px; margin: 2.8rem auto 0; padding: clamp(1.4rem, 4vw, 2.2rem); border: 1px solid rgba(70,80,68,.16); background: rgba(255,255,255,.72); box-shadow: 0 24px 60px rgba(48,45,41,.07); text-align: left; }
-.invitation-search > label, .pass-selector, .note-field { display: block; margin-bottom: .7rem; color: var(--sage-dark); font-size: .72rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.invitation-search > label, .pass-selector, .note-field, .guest-count-selectors label { display: block; margin-bottom: .7rem; color: var(--sage-dark); font-size: .72rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
 .invitation-search__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .7rem; }
-.invitation-search input, .pass-selector select, .note-field textarea { width: 100%; border: 1px solid rgba(70,80,68,.24); border-radius: 2px; outline: none; background: #fff; color: var(--ink); font: inherit; transition: border-color .2s, box-shadow .2s; }
+.invitation-search input, .pass-selector select, .guest-count-selectors select, .note-field textarea { width: 100%; border: 1px solid rgba(70,80,68,.24); border-radius: 2px; outline: none; background: #fff; color: var(--ink); font: inherit; transition: border-color .2s, box-shadow .2s; }
 .invitation-search input { min-height: 50px; padding: .8rem 1rem; }
-.invitation-search input:focus, .pass-selector select:focus, .note-field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(183,155,100,.14); }
+.invitation-search input:focus, .pass-selector select:focus, .guest-count-selectors select:focus, .note-field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(183,155,100,.14); }
 .invitation-search .story-button { margin: 0; border-radius: 2px; }
 .invitation-search small { display: block; margin-top: 1rem; color: var(--muted); font-size: .72rem; line-height: 1.55; text-align: center; }
 .form-honeypot { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -181,6 +181,9 @@ img, video { display: block; max-width: 100%; }
 .pass-summary span { max-width: 120px; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-align: left; text-transform: uppercase; }
 .pass-summary--ceremony strong { font-size: 1.8rem; }
 .pass-summary--ceremony span { max-width: 230px; text-align: center; }
+.pass-summary--split { gap: clamp(1.5rem, 8vw, 4rem); }
+.pass-summary--split span { display: grid; max-width: none; text-align: center; }
+.pass-summary--split strong { line-height: 1; }
 .attendance-options { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin: 2rem 0 1.4rem; padding: 0; border: 0; }
 .attendance-options legend { grid-column: 1 / -1; width: 100%; margin-bottom: .5rem; color: var(--sage-dark); font-family: var(--serif); font-size: 1.15rem; }
 .attendance-options label { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: .55rem; padding: .75rem; border: 1px solid rgba(70,80,68,.18); color: var(--muted); cursor: pointer; font-size: .82rem; transition: border-color .2s, background .2s, color .2s; }
@@ -188,6 +191,8 @@ img, video { display: block; max-width: 100%; }
 .attendance-options input { accent-color: var(--sage-dark); }
 .pass-selector, .note-field { margin-top: 1.4rem; text-align: left; }
 .pass-selector select { min-height: 48px; margin-top: .65rem; padding: .7rem .9rem; }
+.guest-count-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1.4rem; text-align: left; }
+.guest-count-selectors select { min-height: 48px; margin-top: .65rem; padding: .7rem .9rem; letter-spacing: normal; }
 .note-field span { color: var(--muted); font-weight: 400; letter-spacing: 0; text-transform: none; }
 .note-field textarea { min-height: 90px; margin-top: .65rem; padding: .85rem; resize: vertical; line-height: 1.5; }
 .confirmation-actions { display: flex; flex-direction: column; align-items: center; gap: .9rem; margin-top: 1.8rem; }
@@ -195,6 +200,7 @@ img, video { display: block; max-width: 100%; }
 .text-button { border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: .75rem; }
 .whatsapp-button { background: #315f48; border-color: #315f48; }
 .invitation-card--success { background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(234,239,229,.88)); }
+.invitation-card .redirect-note { font-size: .78rem; }
 
 /* Cierre */
 .story-closing { position: relative; padding: clamp(6rem, 12vw, 10rem) 0; overflow: hidden; background: #30362f; color: white; text-align: center; }
@@ -239,7 +245,7 @@ img, video { display: block; max-width: 100%; }
   .gift-actions .story-button { width: 100%; }
   .invitation-search__row { grid-template-columns: 1fr; }
   .invitation-search__row .story-button { width: 100%; }
-  .attendance-options { grid-template-columns: 1fr; }
+  .attendance-options, .guest-count-selectors { grid-template-columns: 1fr; }
   .invitation-card { border-radius: 28px 28px 3px 3px; }
   .progress-links { display: none; }
   .story-closing::before { inset: .65rem; }
