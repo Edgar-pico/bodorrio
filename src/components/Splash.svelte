@@ -1,10 +1,9 @@
-<script>
-  import { fade } from 'svelte/transition';
-  
+<script lang="ts">
   let clicked = $state(false);
   let showContent = $state(false);
   
   function handleClick() {
+    if (clicked) return;
     clicked = true;
     setTimeout(() => {
       showContent = true;
@@ -18,20 +17,20 @@
     onclick={handleClick}
     role="button"
     tabindex="0"
-    onkeydown={(e) => e.key === 'Enter' && handleClick()}
+    onkeydown={(event) => (event.key === 'Enter' || event.key === ' ') && handleClick()}
   >
     <!-- Mitad izquierda -->
     <div 
       class="absolute top-0 left-0 w-1/2 h-full transition-transform duration-1000 ease-in-out"
       class:translate-x-[-100%]={clicked}
-      style="background-image: url('/inicio-1.jpg'); background-size: cover; background-position: left center;"
+      style="background-image: url('/inicio-1.webp'); background-size: cover; background-position: left center;"
     ></div>
     
     <!-- Mitad derecha -->
     <div 
       class="absolute top-0 right-0 w-1/2 h-full transition-transform duration-1000 ease-in-out"
       class:translate-x-[100%]={clicked}
-      style="background-image: url('/inicio-1.jpg'); background-size: cover; background-position: right center;"
+      style="background-image: url('/inicio-1.webp'); background-size: cover; background-position: right center;"
     ></div>
     
     <!-- Overlay oscuro -->
@@ -43,8 +42,7 @@
     <!-- Contenido central -->
     {#if !clicked}
       <div 
-        class="absolute inset-0 flex flex-col items-center justify-center z-10"
-        in:fade={{ duration: 800 }}
+        class="splash-content absolute inset-0 flex flex-col items-center justify-center z-10"
       >
         <!-- Anillos SVG elegantes -->
         <div class="mb-8 animate-pulse">
@@ -74,7 +72,7 @@
           Edgar & Brenda
         </h2>
         <p class="text-white/90 text-lg md:text-xl font-light tracking-[0.3em] uppercase drop-shadow-md">
-          Toca para abrir
+          Toca para abrir el Capítulo II
         </p>
         
         <!-- Indicador de toque -->

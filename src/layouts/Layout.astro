@@ -13,15 +13,16 @@ const { title = "Edgar & Brenda | Boda" } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Invitación de boda de Edgar y Brenda - 23 de Mayo, 2026" />
+    <meta name="description" content="Nuestra historia continúa. Acompaña a Edgar y Brenda en el siguiente capítulo: nuestro sí ante Dios." />
+    <meta name="theme-color" content="#30362f" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content="Capítulo II — Nuestro sí ante Dios." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/inicio-2.webp" />
     <link rel="icon" href="/favicon.ico" />
     
     <!-- Preload de imágenes críticas -->
-    <link rel="preload" as="image" href="/inicio-1.jpg" />
-    <link rel="preload" as="image" href="/inicio-2.jpg" />
-    
-    <!-- DNS Prefetch para Google Maps -->
-    <link rel="dns-prefetch" href="https://maps.app.goo.gl" />
+    <link rel="preload" as="image" href="/inicio-1.webp" fetchpriority="high" />
     
     <title>{title}</title>
   </head>
@@ -33,11 +34,6 @@ const { title = "Edgar & Brenda | Boda" } = Astro.props;
 <style is:global>
   html {
     scroll-behavior: smooth;
-  }
-  
-  /* Optimización de imágenes de fondo */
-  .bg-fixed {
-    will-change: transform;
   }
   
   /* Reducir motion para usuarios que lo prefieran */

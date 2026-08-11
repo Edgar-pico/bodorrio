@@ -8,17 +8,32 @@ import Comida from '../components/Comida.svelte';
 import Ninos from '../components/Ninos.svelte';
 import Iglesia from '../components/Iglesia.svelte';
 import Countdown from '../components/Countdown.svelte';
+import ChaptersIntro from '../components/ChaptersIntro.astro';
+import ChapterTransition from '../components/ChapterTransition.astro';
+import NuestraHistoria from '../components/NuestraHistoria.astro';
+import GuestDetails from '../components/GuestDetails.astro';
+import Gifts from '../components/Gifts.astro';
+import Rsvp from '../components/Rsvp.svelte';
+import Closing from '../components/Closing.astro';
+import { weddingConfig } from '../lib/wedding-config';
 ---
 
-<Layout title="Edgar & Brenda | 23 de Mayo, 2026">
+<Layout title="Edgar & Brenda | Nuestra historia continúa">
   <Splash client:load />
-  <ProgressPath client:load />
+  <ProgressPath client:idle />
   <main>
-    <Hero client:load />
-    <CeremoniaCivil client:visible />
-    <Comida client:visible />
-    <Ninos client:visible />
-    <Iglesia client:visible />
-    <Countdown client:visible />
+    <Hero />
+    <ChaptersIntro />
+    <CeremoniaCivil />
+    <ChapterTransition />
+    <Iglesia />
+    <Countdown eventDate={weddingConfig.religious.dateIso} dateLabel={weddingConfig.religious.dateLabel} client:visible />
+    <Comida />
+    <NuestraHistoria {...weddingConfig.storyVideo} />
+    <GuestDetails />
+    <Ninos />
+    <Gifts amazon={weddingConfig.gifts.amazon} liverpool={weddingConfig.gifts.liverpool} />
+    <Rsvp confirmationWhatsApp={weddingConfig.religious.confirmationWhatsApp} client:visible />
+    <Closing />
   </main>
 </Layout>

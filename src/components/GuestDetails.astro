@@ -1,0 +1,29 @@
+---
+import { weddingConfig } from '../lib/wedding-config';
+const details = weddingConfig.religious;
+---
+
+<section id="invitados" class="story-section guest-details reveal-section" aria-labelledby="guest-title">
+  <div class="section-shell section-shell--narrow">
+    <p class="eyebrow">Para acompañarnos</p>
+    <h2 id="guest-title">Detalles para nuestros invitados</h2>
+
+    <div class="details-grid">
+      <article class="detail-card">
+        <span aria-hidden="true">◇</span>
+        <h3>Código de vestimenta</h3>
+        <p><strong>{details.dressCode}</strong></p>
+        <ul>{details.dressCodeNotes.map((item) => <li>{item}</li>)}</ul>
+      </article>
+      <article class="detail-card">
+        <span aria-hidden="true">✦</span>
+        <h3>Recomendaciones</h3>
+        {details.recommendations.length ? (
+          <ul>{details.recommendations.map((item) => <li>{item}</li>)}</ul>
+        ) : (
+          <p>Estamos preparando todos los detalles para recibirte.</p>
+        )}
+      </article>
+    </div>
+  </div>
+</section>

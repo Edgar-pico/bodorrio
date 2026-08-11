@@ -1,0 +1,27 @@
+---
+import type { LinkConfig } from '../lib/wedding-config';
+interface Props { amazon: LinkConfig; liverpool: LinkConfig; }
+const { amazon, liverpool } = Astro.props;
+---
+
+<section id="regalos" class="story-section gifts reveal-section" aria-labelledby="gifts-title">
+  <div class="section-shell section-shell--narrow">
+    <p class="eyebrow">Mesa de regalos</p>
+    <h2 id="gifts-title">Tu presencia es nuestro mejor regalo</h2>
+    <p class="lead">Lo más importante para nosotros es compartir este día contigo. Si deseas tener un detalle con nosotros, hemos preparado estas opciones.</p>
+
+    <div class="gift-actions">
+      {amazon.url ? (
+        <a class="story-button" href={amazon.url} target="_blank" rel="noopener noreferrer">{amazon.label}<span aria-hidden="true">↗</span></a>
+      ) : (
+        <span class="story-button story-button--disabled" aria-disabled="true">Amazon · disponible próximamente</span>
+      )}
+      {liverpool.url ? (
+        <a class="story-button story-button--outline" href={liverpool.url} target="_blank" rel="noopener noreferrer">{liverpool.label}<span aria-hidden="true">↗</span></a>
+      ) : (
+        <span class="story-button story-button--outline story-button--disabled" aria-disabled="true">Liverpool · disponible próximamente</span>
+      )}
+    </div>
+    <p class="gift-note">Con cariño, gracias por celebrar con nosotros.</p>
+  </div>
+</section>

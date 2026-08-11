@@ -1,0 +1,43 @@
+---
+interface Props {
+  url?: string | null;
+  poster?: string | null;
+  title?: string;
+  description?: string;
+  autoplay?: boolean;
+  controls?: boolean;
+}
+
+const {
+  url = null,
+  poster = null,
+  title = 'Nuestra historia',
+  description = '',
+  autoplay = false,
+  controls = true
+} = Astro.props;
+---
+
+<section id="historia" class="story-section story-video reveal-section" aria-labelledby="story-title">
+  <div class="section-shell section-shell--narrow">
+    <p class="eyebrow">¿Cómo llegamos hasta aquí?</p>
+    <h2 id="story-title">{title}</h2>
+    <p class="lead">{description}</p>
+    <p class="story-copy">Y aunque hoy conoces el final… quizá no conoces todo lo que pasó antes.</p>
+
+    <div class="cinema-frame">
+      {url ? (
+        <video src={url} poster={poster ?? undefined} autoplay={autoplay} controls={controls} playsinline preload="metadata">
+          Tu navegador no puede reproducir este video.
+        </video>
+      ) : (
+        <div class="cinema-placeholder">
+          <span class="cinema-stars" aria-hidden="true">✦ · ✦ · ✦</span>
+          <strong>Próximamente</strong>
+          <span>Nuestra historia</span>
+          <small>Acámbaro · Celaya · un mismo camino</small>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

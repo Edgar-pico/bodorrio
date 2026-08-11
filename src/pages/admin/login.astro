@@ -1,0 +1,14 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminLogin from '../../components/AdminLogin.svelte';
+import { getAdminSession } from '../../lib/server/admin-auth';
+
+export const prerender = false;
+
+const admin = await getAdminSession(Astro.cookies);
+if (admin) return Astro.redirect('/admin');
+---
+
+<AdminLayout title="Iniciar sesión | Boda Edgar & Brenda">
+  <AdminLogin client:load />
+</AdminLayout>
