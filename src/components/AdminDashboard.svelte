@@ -183,7 +183,10 @@
   }
 
   function invitationUrl(guest: Guest) {
-    return `${window.location.origin}/?i=${guest.token}`;
+    const url = new URL('/', window.location.origin);
+    url.searchParams.set('i', guest.token);
+    url.hash = 'confirmacion';
+    return url.toString();
   }
 
   function whatsappUrl(guest: Guest, contact: Contact) {
@@ -191,7 +194,7 @@
     const passes = guest.invitationType === 'ceremony_only'
       ? 'Esta invitación es para acompañarnos en la misa.'
       : `Su invitación incluye ${guest.allowedAdults} ${guest.allowedAdults === 1 ? 'adulto' : 'adultos'} y ${guest.allowedChildren} ${guest.allowedChildren === 1 ? 'niño' : 'niños'}.`;
-    const message = `Hola ${contact.contactName}, Edgar y Brenda queremos compartir contigo nuestra invitación de boda para ${guest.fullName}.\n\n${passes}\nID de invitación: ${guest.invitationCode}\n\nAquí pueden ver la invitación completa y confirmar su asistencia: ${link}`;
+    const message = `Hola ${contact.contactName}, Edgar y Brenda queremos compartir contigo nuestra invitación de boda para ${guest.fullName}.\n\n${passes}\nID de invitación: ${guest.invitationCode}\n\nAbre aquí su invitación y confirma la asistencia directamente: ${link}`;
     return `https://wa.me/${contact.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
   }
 

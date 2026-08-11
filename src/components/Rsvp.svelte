@@ -31,6 +31,7 @@
   let searchError = $state('');
   let confirmationError = $state('');
   let confirmationComplete = $state(false);
+  let openedFromPrivateLink = $state(false);
   let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function readJson(response: Response) {
@@ -43,6 +44,13 @@
     selectedAdults = current.status === 'confirmed' ? current.confirmedAdults : current.allowedAdults;
     selectedChildren = current.status === 'confirmed' ? current.confirmedChildren : current.allowedChildren;
     attending = current.status !== 'declined';
+  }
+
+  function focusInvitationCard() {
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('#invitacion-familiar')?.focus({ preventScroll: true });
+      document.querySelector<HTMLElement>('#confirmacion')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   async function findInvitation(token?: string) {
@@ -61,7 +69,10 @@
       if (!response.ok) throw new Error(payload.message ?? 'No pudimos encontrar tu invitación.');
 
       invitation = payload.invitation;
-      if (invitation) populateSelection(invitation);
+      if (invitation) {
+        populateSelection(invitation);
+        if (token) focusInvitationCard();
+      }
     } catch (error) {
       invitation = null;
       searchError = error instanceof Error ? error.message : 'No pudimos encontrar tu invitación.';
@@ -71,8 +82,7 @@
   }
 
   function goToOfficialInvitation() {
-    if (!invitation) return;
-    window.location.assign(`/?i=${encodeURIComponent(invitation.token)}&confirmado=1`);
+    window.location.assign('/');
   }
 
   async function confirmAttendance() {
@@ -113,6 +123,7 @@
     searchError = '';
     confirmationError = '';
     confirmationComplete = false;
+    openedFromPrivateLink = false;
     const url = new URL(window.location.href);
     url.searchParams.delete('i');
     url.searchParams.delete('confirmado');
@@ -121,7 +132,10 @@
 
   onMount(() => {
     const token = new URL(window.location.href).searchParams.get('i');
-    if (token) findInvitation(token);
+    if (token) {
+      openedFromPrivateLink = true;
+      findInvitation(token);
+    }
   });
 
   onDestroy(() => {
@@ -160,7 +174,7 @@
         <small>El ID aparece en el mensaje que recibiste. Tu información no se muestra públicamente.</small>
       </form>
     {:else if confirmationComplete}
-      <div class="invitation-card invitation-card--success" aria-live="polite">
+      <div id="invitacion-familiar" class="invitation-card invitation-card--success" aria-live="polite" tabindex="-1">
         <span class="invitation-card__ornament" aria-hidden="true">✦</span>
         <p class="eyebrow">Confirmación guardada · {invitation.invitationCode}</p>
         <h3>Gracias, {invitation.fullName}</h3>
@@ -175,7 +189,7 @@
             Gracias por avisarnos. Los llevaremos con cariño en este capítulo.
           {/if}
         </p>
-        <p class="redirect-note">En unos segundos volverán al inicio para seguir viendo la invitación oficial.</p>
+        <p class="redirect-note">En unos segundos volverán al inicio para disfrutar la invitación completa.</p>
         <div class="confirmation-actions">
           <button class="story-button" type="button" onclick={goToOfficialInvitation}>Ver invitación completa</button>
           <a class="story-button whatsapp-button" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Avisarnos por WhatsApp <span aria-hidden="true">↗</span></a>
@@ -183,7 +197,7 @@
         </div>
       </div>
     {:else}
-      <div class="invitation-card">
+      <div id="invitacion-familiar" class="invitation-card" tabindex="-1">
         <span class="invitation-card__ornament" aria-hidden="true">✦</span>
         <p class="eyebrow">Invitación encontrada · {invitation.invitationCode}</p>
         <h3>{invitation.fullName}</h3>
@@ -217,7 +231,11 @@
 
         <div class="confirmation-actions">
           <button class="story-button" type="button" onclick={confirmAttendance} disabled={isConfirming || (attending && invitation.invitationType === 'reception' && Number(selectedAdults) + Number(selectedChildren) < 1)}>{isConfirming ? 'Guardando…' : 'Guardar confirmación'}</button>
-          <button class="text-button" type="button" onclick={startAgain}>No es nuestra invitación</button>
+          {#if openedFromPrivateLink}
+            <button class="text-button" type="button" onclick={startAgain}>No es nuestra invitación</button>
+          {:else}
+            <button class="text-button" type="button" onclick={startAgain}>Buscar otra invitación</button>
+          {/if}
         </div>
       </div>
     {/if}

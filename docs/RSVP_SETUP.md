@@ -164,7 +164,7 @@ En el administrador puedes buscar por:
 - cualquiera de sus teléfonos;
 - ID, por ejemplo `EB-000001`.
 
-En la página pública también se puede localizar con nombre, teléfono o ID. El enlace privado contiene el token y abre la página oficial completa.
+En la página pública también se puede localizar con nombre, teléfono o ID. El enlace privado contiene el token y el ancla `#confirmacion`, por lo que abre directamente la tarjeta familiar sin pasar por el buscador ni la portada. Los enlaces anteriores que solo tengan `?i=TOKEN` también se reconocen y abren directamente.
 
 ## 9. Liberar y reasignar pases
 
@@ -188,11 +188,11 @@ Cada tarjeta tiene un botón de **WhatsApp** por destinatario. Todos los mensaje
 - nombre mostrado en la invitación;
 - pases de adultos y niños;
 - ID legible `EB-000001`;
-- enlace privado `?i=TOKEN` a la página oficial completa.
+- enlace privado `?i=TOKEN#confirmacion` que abre directamente la invitación familiar.
 
 El administrador revisa el texto y pulsa **Enviar**. Esto usa `wa.me` y no requiere pagar una API.
 
-Después de guardar su confirmación, el invitado ve el resumen durante tres segundos y el sistema lo devuelve automáticamente al inicio de la invitación oficial. También puede usar el botón **Ver invitación completa** de inmediato.
+Después de guardar su confirmación, el invitado ve el resumen durante tres segundos y el sistema lo devuelve automáticamente a `/`, sin el token privado. Ahí puede abrir y disfrutar la invitación oficial completa; cuando llegue nuevamente a la sección de confirmación verá el buscador normal. También puede usar el botón **Ver invitación completa** de inmediato.
 
 ## 11. Pruebas recomendadas
 
@@ -216,9 +216,11 @@ Prueba:
 7. búsqueda por ambos teléfonos y por ID;
 8. familia con 2 adultos y 2 niños que confirma cantidades distintas;
 9. liberación y reasignación de pases conservando la categoría;
-10. enlace de WhatsApp para cada destinatario;
-11. regreso al inicio después de confirmar;
-12. cierre de sesión.
+10. enlace de WhatsApp para cada destinatario y apertura directa en `#confirmacion`;
+11. ausencia de la portada de apertura cuando se entra con el enlace privado;
+12. regreso a `/` sin `?i=TOKEN` después de confirmar;
+13. buscador normal visible al volver a la sección de confirmación;
+14. cierre de sesión.
 
 ## 12. Seguridad aplicada
 
