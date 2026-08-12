@@ -16,6 +16,7 @@ const json = (body: unknown, status = 200) =>
 const guestSelect = [
   'id',
   'full_name',
+  'invitation_mode',
   'allowed_passes',
   'confirmed_passes',
   'allowed_adults',
@@ -37,6 +38,7 @@ function serializeInvitation(guest: any) {
     token: guest.public_token,
     invitationCode: guest.invitation_code,
     fullName: guest.full_name,
+    invitationMode: guest.invitation_mode,
     maskedPhone: primary ? maskPhone(primary.phone_e164) : 'Teléfono verificado',
     recipientNames: contacts.map((contact) => contact.contact_name),
     allowedPasses: guest.allowed_passes,
@@ -64,7 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
     const hasToken = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token);
     const search = typeof body.search === 'string' ? body.search.trim() : '';
     if (token && !hasToken) return json({ message: 'El enlace de invitación no es válido.' }, 400);
-    if (!hasToken && (search.length < 5 || search.length > 120)) {
+    if (!hasToken && (search.length < 2 || search.length > 120)) {
       return json({ message: 'Escribe tu nombre, teléfono o ID de invitación.' }, 400);
     }
 

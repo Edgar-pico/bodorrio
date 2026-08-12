@@ -3,6 +3,12 @@ export type InvitationContactInput = {
   phone: string;
 };
 
+export type InvitationMode = 'individual' | 'group';
+
+export function parseInvitationMode(value: unknown): InvitationMode {
+  return value === 'individual' ? 'individual' : 'group';
+}
+
 export function parseInvitationContacts(value: unknown): InvitationContactInput[] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > 5) return null;
 
@@ -41,6 +47,7 @@ export function serializeGuest(guest: any) {
     invitationCode: guest.invitation_code,
     fullName: guest.full_name,
     contacts,
+    invitationMode: guest.invitation_mode,
     invitationType: guest.invitation_type,
     allowedPasses: guest.allowed_passes,
     confirmedPasses: guest.confirmed_passes,
@@ -61,6 +68,7 @@ export const adminGuestSelect = [
   'public_token',
   'invitation_code',
   'full_name',
+  'invitation_mode',
   'invitation_type',
   'allowed_passes',
   'confirmed_passes',

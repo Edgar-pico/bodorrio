@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getAdminSession } from '../../../../lib/server/admin-auth';
 import { hasSameOrigin, json } from '../../../../lib/server/http';
-import { adminGuestSelect, contactsForRpc, parseInvitationContacts, serializeGuest } from '../../../../lib/server/invitations';
+import { adminGuestSelect, contactsForRpc, parseInvitationContacts, parseInvitationMode, serializeGuest } from '../../../../lib/server/invitations';
 import { getWeddingDatabase } from '../../../../lib/server/supabase';
 
 export const prerender = false;
@@ -72,17 +72,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       fullName?: unknown;
       phone?: unknown;
       contacts?: unknown;
+      invitationMode?: unknown;
       invitationType?: unknown;
       allowedAdults?: unknown;
       allowedChildren?: unknown;
     };
     const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
     const contacts = parseInvitationContacts(body.contacts);
+    const invitationMode = parseInvitationMode(body.invitationMode);
     const invitationType = body.invitationType === 'ceremony_only' ? 'ceremony_only' : 'reception';
     const allowedAdults = invitationType === 'ceremony_only' ? 0 : Number(body.allowedAdults);
     const allowedChildren = invitationType === 'ceremony_only' ? 0 : Number(body.allowedChildren);
 
-    if (fullName.length < 5 || fullName.length > 120 || !contacts) {
+    if (fullName.length < 2 || fullName.length > 120 || !contacts || (invitationMode === 'individual' && contacts.length !== 1)) {
       return json({ message: 'Revisa el nombre de la invitación y los datos de cada destinatario.' }, 400);
     }
     if (!Number.isInteger(allowedAdults) || !Number.isInteger(allowedChildren) || allowedAdults < 0 || allowedChildren < 0 || allowedAdults + allowedChildren > 20 || (invitationType === 'reception' && allowedAdults + allowedChildren < 1)) {
@@ -94,6 +96,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       p_guest_id: null,
       p_full_name: fullName,
       p_contacts: contactsForRpc(contacts),
+      p_invitation_mode: invitationMode,
       p_invitation_type: invitationType,
       p_allowed_adults: allowedAdults,
       p_allowed_children: allowedChildren,
@@ -102,6 +105,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (error) {
       if (error.message.includes('RECEPTION_CAPACITY')) return json({ message: 'No hay suficientes pases disponibles en el cupo del salón.' }, 409);
+      if (error.message.includes('INDIVIDUAL_CONTACT_LIMIT')) return json({ message: 'Una invitación individual debe tener exactamente un contacto.' }, 400);
       if (error.message.includes('PHONE_MUST_HAVE_10_DIGITS')) return json({ message: 'El teléfono debe tener 10 dígitos.' }, 400);
       if (error.message.includes('PHONE_ALREADY_ASSIGNED')) return json({ message: 'Uno de los teléfonos ya pertenece a otra invitación activa.' }, 409);
       if (error.message.includes('wedding_invitation_contacts_guest_id_phone_normalized_key')) return json({ message: 'No repitas el mismo teléfono dentro de una invitación.' }, 409);

@@ -60,13 +60,22 @@ export const POST: APIRoute = async ({ request }) => {
     const guest = Array.isArray(data) ? data[0] : data;
     if (!guest) throw new Error('Confirmation did not return a guest.');
 
+    const { data: invitationDetails, error: invitationDetailsError } = await database
+      .from('wedding_guests')
+      .select('invitation_mode, contacts:wedding_invitation_contacts(contact_name, display_order)')
+      .eq('public_token', token)
+      .single();
+    if (invitationDetailsError) throw invitationDetailsError;
+    const contacts = [...((invitationDetails as any)?.contacts ?? [])].sort((left, right) => left.display_order - right.display_order);
+
     return json({
       invitation: {
         token,
         invitationCode: guest.invitation_code,
         fullName: guest.full_name,
         maskedPhone: maskPhone(guest.phone_e164),
-        recipientNames: [],
+        recipientNames: contacts.map((contact) => contact.contact_name),
+        invitationMode: invitationDetails.invitation_mode,
         allowedPasses: guest.allowed_passes,
         confirmedPasses: guest.confirmed_passes,
         allowedAdults: guest.allowed_adults,

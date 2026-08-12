@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
 
   type Invitation = {
     token: string;
@@ -7,6 +7,7 @@
     fullName: string;
     maskedPhone: string;
     recipientNames: string[];
+    invitationMode: 'individual' | 'group';
     allowedPasses: number;
     confirmedPasses: number;
     allowedAdults: number;
@@ -32,7 +33,6 @@
   let confirmationError = $state('');
   let confirmationComplete = $state(false);
   let openedFromPrivateLink = $state(false);
-  let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function readJson(response: Response) {
     const contentType = response.headers.get('content-type') ?? '';
@@ -54,7 +54,7 @@
   }
 
   async function findInvitation(token?: string) {
-    if ((!token && search.trim().length < 5) || isSearching) return;
+    if ((!token && search.trim().length < 2) || isSearching) return;
     isSearching = true;
     searchError = '';
     confirmationComplete = false;
@@ -71,6 +71,7 @@
       invitation = payload.invitation;
       if (invitation) {
         populateSelection(invitation);
+        confirmationComplete = invitation.status !== 'pending';
         if (token) focusInvitationCard();
       }
     } catch (error) {
@@ -83,6 +84,14 @@
 
   function goToOfficialInvitation() {
     window.location.assign('/');
+  }
+
+  function modifyResponse() {
+    if (!invitation) return;
+    populateSelection(invitation);
+    confirmationError = '';
+    confirmationComplete = false;
+    focusInvitationCard();
   }
 
   async function confirmAttendance() {
@@ -107,7 +116,6 @@
 
       invitation = payload.invitation;
       confirmationComplete = true;
-      redirectTimer = setTimeout(goToOfficialInvitation, 3000);
     } catch (error) {
       confirmationError = error instanceof Error ? error.message : 'No pudimos guardar tu confirmación.';
     } finally {
@@ -116,7 +124,6 @@
   }
 
   function startAgain() {
-    if (redirectTimer) clearTimeout(redirectTimer);
     search = '';
     invitation = null;
     note = '';
@@ -138,17 +145,19 @@
     }
   });
 
-  onDestroy(() => {
-    if (redirectTimer) clearTimeout(redirectTimer);
-  });
-
   let whatsappUrl = $derived.by(() => {
     if (!invitation) return '#';
+    const subject = invitation.invitationMode === 'individual' ? `soy ${invitation.fullName}` : `somos ${invitation.fullName}`;
+    const confirmationVerb = invitation.invitationMode === 'individual' ? 'Confirmo' : 'Confirmamos';
+    const attendanceVerb = invitation.invitationMode === 'individual' ? 'los acompañaré' : 'los acompañaremos';
+    const declineText = invitation.invitationMode === 'individual'
+      ? 'Gracias por invitarme. En esta ocasión no podré acompañarlos.'
+      : 'Gracias por invitarnos. En esta ocasión no podremos acompañarlos.';
     const message = attending
       ? invitation.invitationType === 'ceremony_only'
-        ? `Hola Edgar y Brenda, somos ${invitation.fullName}. Confirmamos que los acompañaremos en su misa de boda. Invitación ${invitation.invitationCode}.`
-        : `Hola Edgar y Brenda, somos ${invitation.fullName}. Confirmamos ${invitation.confirmedAdults} ${invitation.confirmedAdults === 1 ? 'adulto' : 'adultos'} y ${invitation.confirmedChildren} ${invitation.confirmedChildren === 1 ? 'niño' : 'niños'}. Invitación ${invitation.invitationCode}.`
-      : `Hola Edgar y Brenda, somos ${invitation.fullName}. Gracias por invitarnos. En esta ocasión no podremos acompañarlos. Invitación ${invitation.invitationCode}.`;
+        ? `Hola Edgar y Brenda, ${subject}. ${confirmationVerb} que ${attendanceVerb} en su misa de boda. Invitación ${invitation.invitationCode}.`
+        : `Hola Edgar y Brenda, ${subject}. ${confirmationVerb} ${invitation.confirmedAdults} ${invitation.confirmedAdults === 1 ? 'adulto' : 'adultos'} y ${invitation.confirmedChildren} ${invitation.confirmedChildren === 1 ? 'niño' : 'niños'}. Invitación ${invitation.invitationCode}.`
+      : `Hola Edgar y Brenda, ${subject}. ${declineText} Invitación ${invitation.invitationCode}.`;
     return `https://wa.me/${confirmationWhatsApp}?text=${encodeURIComponent(message)}`;
   });
 </script>
@@ -163,8 +172,8 @@
       <form class="invitation-search" onsubmit={(event) => { event.preventDefault(); findInvitation(); }}>
         <label for="guest-search">Nombre, teléfono o ID de invitación</label>
         <div class="invitation-search__row">
-          <input id="guest-search" bind:value={search} autocomplete="name" minlength="5" placeholder="Ej. Bárbara y Pablo, 4611234567 o EB-000001" required />
-          <button class="story-button" type="submit" disabled={isSearching || search.trim().length < 5}>{isSearching ? 'Buscando…' : 'Buscar invitación'}</button>
+          <input id="guest-search" bind:value={search} autocomplete="name" minlength="2" placeholder="Ej. Bárbara y Pablo, 4611234567 o EB-000001" required />
+          <button class="story-button" type="submit" disabled={isSearching || search.trim().length < 2}>{isSearching ? 'Buscando…' : 'Buscar invitación'}</button>
         </div>
         <div class="form-honeypot" aria-hidden="true">
           <label for="website">Sitio web</label>
@@ -189,10 +198,11 @@
             Gracias por avisarnos. Los llevaremos con cariño en este capítulo.
           {/if}
         </p>
-        <p class="redirect-note">En unos segundos volverán al inicio para disfrutar la invitación completa.</p>
+        <p class="redirect-note">Tu confirmación quedó guardada. Puedes avisarnos por WhatsApp o continuar cuando tú decidas.</p>
         <div class="confirmation-actions">
           <button class="story-button" type="button" onclick={goToOfficialInvitation}>Ver invitación completa</button>
           <a class="story-button whatsapp-button" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Avisarnos por WhatsApp <span aria-hidden="true">↗</span></a>
+          <button class="text-button" type="button" onclick={modifyResponse}>Modificar mi respuesta</button>
           <button class="text-button" type="button" onclick={startAgain}>Consultar otra invitación</button>
         </div>
       </div>

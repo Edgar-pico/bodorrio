@@ -1,5 +1,6 @@
 <script lang="ts">
   type InvitationType = 'reception' | 'ceremony_only';
+  type InvitationMode = 'individual' | 'group';
   type Status = 'pending' | 'confirmed' | 'declined';
   type Contact = { id?: string; contactName: string; phone: string; isPrimary?: boolean };
   type Guest = {
@@ -8,6 +9,7 @@
     invitationCode: string;
     fullName: string;
     contacts: Contact[];
+    invitationMode: InvitationMode;
     invitationType: InvitationType;
     allowedPasses: number;
     confirmedPasses: number;
@@ -47,6 +49,7 @@
   let editingId = $state<string | null>(null);
   let fullName = $state('');
   let contacts = $state<Contact[]>([{ contactName: '', phone: '' }]);
+  let invitationMode = $state<InvitationMode>('individual');
   let invitationType = $state<InvitationType>('reception');
   let allowedAdults = $state(1);
   let allowedChildren = $state(0);
@@ -90,6 +93,7 @@
     editingId = null;
     fullName = '';
     contacts = [{ contactName: '', phone: '' }];
+    invitationMode = 'individual';
     invitationType = 'reception';
     allowedAdults = 1;
     allowedChildren = 0;
@@ -97,7 +101,12 @@
   }
 
   function addContact() {
-    if (contacts.length < 5) contacts.push({ contactName: '', phone: '' });
+    if (invitationMode === 'group' && contacts.length < 5) contacts.push({ contactName: '', phone: '' });
+  }
+
+  function selectInvitationMode(mode: InvitationMode) {
+    invitationMode = mode;
+    if (mode === 'individual' && contacts.length > 1) contacts = [contacts[0]];
   }
 
   function removeContact(index: number) {
@@ -108,6 +117,7 @@
     editingId = guest.id;
     fullName = guest.fullName;
     contacts = guest.contacts.map((contact) => ({ contactName: contact.contactName, phone: contact.phone.replace(/^\+52/, '') }));
+    invitationMode = guest.invitationMode;
     invitationType = guest.invitationType;
     allowedAdults = guest.invitationType === 'reception' ? guest.allowedAdults : 0;
     allowedChildren = guest.invitationType === 'reception' ? guest.allowedChildren : 0;
@@ -126,6 +136,7 @@
       const payload = {
         fullName: fullName.trim(),
         contacts: contacts.map((contact) => ({ contactName: contact.contactName.trim(), phone: contact.phone.trim() })),
+        invitationMode,
         invitationType,
         allowedAdults: invitationType === 'reception' ? Number(allowedAdults) : 0,
         allowedChildren: invitationType === 'reception' ? Number(allowedChildren) : 0,
@@ -136,7 +147,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      success = editingId ? 'Invitación actualizada.' : 'Invitación creada. Ya puedes enviar el enlace a cada destinatario.';
+      success = editingId ? 'Invitación actualizada.' : 'Invitación creada. Ya puedes compartirla por WhatsApp.';
       resetForm();
       await loadDashboard();
     } catch (reason) {
@@ -189,13 +200,18 @@
     return url.toString();
   }
 
-  function whatsappUrl(guest: Guest, contact: Contact) {
+  function whatsappMessage(guest: Guest) {
     const link = invitationUrl(guest);
-    const passes = guest.invitationType === 'ceremony_only'
-      ? 'Esta invitación es para acompañarnos en la misa.'
-      : `Su invitación incluye ${guest.allowedAdults} ${guest.allowedAdults === 1 ? 'adulto' : 'adultos'} y ${guest.allowedChildren} ${guest.allowedChildren === 1 ? 'niño' : 'niños'}.`;
-    const message = `Hola ${contact.contactName}, Edgar y Brenda queremos compartir contigo nuestra invitación de boda para ${guest.fullName}.\n\n${passes}\nID de invitación: ${guest.invitationCode}\n\nAbre aquí su invitación y confirma la asistencia directamente: ${link}`;
-    return `https://wa.me/${contact.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    const greeting = `Hola ${guest.fullName}`;
+    const invitationText = guest.invitationMode === 'individual'
+      ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
+      : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
+    return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación y confirma la asistencia directamente: ${link}`;
+  }
+
+  function whatsappUrl(guest: Guest) {
+    const phone = guest.invitationMode === 'individual' ? guest.contacts[0]?.phone.replace(/\D/g, '') : '';
+    return `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage(guest))}`;
   }
 
   async function copyInvitation(guest: Guest) {
@@ -243,10 +259,16 @@
       <p class="eyebrow">{editingId ? 'Editar invitación' : 'Nueva invitación'}</p>
       <h2>{editingId ? 'Actualizar invitación' : 'Agregar invitación'}</h2>
       <form onsubmit={(event) => { event.preventDefault(); saveGuest(); }}>
-        <label for="full-name">Nombre mostrado en la invitación</label>
-        <input id="full-name" bind:value={fullName} minlength="5" maxlength="120" required placeholder="Ej. Bárbara y Pablo" />
+        <fieldset>
+          <legend>Modalidad de la invitación</legend>
+          <label class:active={invitationMode === 'individual'}><input type="radio" name="invitation-mode" checked={invitationMode === 'individual'} onchange={() => selectInvitationMode('individual')} /> Individual</label>
+          <label class:active={invitationMode === 'group'}><input type="radio" name="invitation-mode" checked={invitationMode === 'group'} onchange={() => selectInvitationMode('group')} /> Conjunta o familiar</label>
+        </fieldset>
 
-        <div class="contacts-heading"><div><span>Destinatarios</span><small>Cada uno recibirá el mismo enlace familiar.</small></div>{#if contacts.length < 5}<button type="button" onclick={addContact}>+ Agregar teléfono</button>{/if}</div>
+        <label for="full-name">Nombre mostrado en la invitación</label>
+        <input id="full-name" bind:value={fullName} minlength="2" maxlength="120" required placeholder={invitationMode === 'individual' ? 'Ej. Emmanuel' : 'Ej. Bárbara y Pablo'} />
+
+        <div class="contacts-heading"><div><span>{invitationMode === 'individual' ? 'Destinatario' : 'Contactos de la invitación'}</span><small>{invitationMode === 'individual' ? 'El enlace se enviará directamente a esta persona.' : 'Todos comparten el mismo enlace y una sola confirmación.'}</small></div>{#if invitationMode === 'group' && contacts.length < 5}<button type="button" onclick={addContact}>+ Agregar teléfono</button>{/if}</div>
         <div class="contact-list">
           {#each contacts as contact, index}
             <div class="contact-row">
@@ -256,6 +278,7 @@
             </div>
           {/each}
         </div>
+        {#if invitationMode === 'group' && contacts.length > 1}<small class="field-help">El botón “WhatsApp · Todos” preparará un solo mensaje; en WhatsApp seleccionarás estos contactos para compartirlo.</small>{/if}
 
         <fieldset>
           <legend>Tipo de invitación</legend>
@@ -291,7 +314,7 @@
           {#each filteredGuests as guest (guest.id)}
             <article class:inactive={!guest.isActive} class="guest-card">
               <div class="guest-main">
-                <div><span class="invitation-id">{guest.invitationCode}</span><h3>{guest.fullName}</h3><p>{guest.invitationType === 'reception' ? 'Misa y recepción' : 'Solo misa'} · {guest.contacts.length} {guest.contacts.length === 1 ? 'destinatario' : 'destinatarios'}</p></div>
+                <div><span class="invitation-id">{guest.invitationCode}</span><h3>{guest.fullName}</h3><p>{guest.invitationMode === 'individual' ? 'Individual' : 'Conjunta'} · {guest.invitationType === 'reception' ? 'Misa y recepción' : 'Solo misa'} · {guest.contacts.length} {guest.contacts.length === 1 ? 'contacto' : 'contactos'}</p></div>
                 <span class:confirmed={guest.status === 'confirmed'} class:declined={guest.status === 'declined'} class="status">{guest.status === 'confirmed' ? 'Confirmado' : guest.status === 'declined' ? 'No asistirá' : 'Pendiente'}</span>
               </div>
               <div class="contact-summary">{#each guest.contacts as contact}<span>{contact.contactName} · {contact.phone}</span>{/each}</div>
@@ -302,7 +325,7 @@
               {/if}
               {#if guest.note}<p class="guest-note">“{guest.note}”</p>{/if}
               <div class="guest-actions">
-                {#each guest.contacts as contact}<a href={whatsappUrl(guest, contact)} target="_blank" rel="noopener noreferrer">WhatsApp · {contact.contactName}</a>{/each}
+                <a href={whatsappUrl(guest)} target="_blank" rel="noopener noreferrer" title={guest.invitationMode === 'group' ? `Selecciona en WhatsApp a: ${guest.contacts.map((contact) => contact.contactName).join(', ')}` : undefined}>{guest.invitationMode === 'individual' ? `WhatsApp · ${guest.contacts[0]?.contactName ?? guest.fullName}` : 'WhatsApp · Todos'}</a>
                 <button type="button" onclick={() => copyInvitation(guest)}>Copiar enlace</button>
                 <button type="button" onclick={() => editGuest(guest)}>Editar</button>
                 {#if guest.isActive && guest.invitationType === 'reception' && guest.status !== 'pending' && guest.allowedPasses > guest.confirmedPasses}
