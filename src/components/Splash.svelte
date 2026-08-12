@@ -1,6 +1,14 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   let clicked = $state(false);
   let showContent = $state(false);
+
+  onMount(() => {
+    const url = new URL(window.location.href);
+    const isPrivateInvitationLink = url.searchParams.has('i');
+    if (isPrivateInvitationLink) showContent = true;
+  });
   
   function handleClick() {
     if (clicked) return;

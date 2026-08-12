@@ -11,10 +11,10 @@ La clave `SUPABASE_SECRET_KEY` y los teléfonos completos nunca se incluyen en e
 
 ## 1. Actualizar la base existente
 
-Tu base ya tiene la primera migración. Ahora entra en **Supabase → SQL Editor → New query**, copia completo y ejecuta:
+Si ya ejecutaste las dos migraciones anteriores, entra en **Supabase → SQL Editor → New query**, copia completo y ejecuta únicamente:
 
 ```text
-supabase/migrations/202608100002_admin_and_ceremony.sql
+supabase/migrations/202608110003_family_contacts_and_child_passes.sql
 ```
 
 Debe terminar con:
@@ -23,17 +23,20 @@ Debe terminar con:
 Success. No rows returned
 ```
 
-No borra invitados ni confirmaciones. Agrega:
+No borra invitados ni confirmaciones. La migración:
 
-- `wedding_settings`: cupo total del salón.
-- `wedding_admins`: administradores autorizados.
-- `wedding_guests.invitation_type`: `reception` o `ceremony_only`.
-- funciones transaccionales para guardar invitados, controlar cupo y liberar pases.
+- convierte los pases existentes a pases de adulto;
+- genera un ID único como `EB-000001` para cada invitación;
+- conserva el teléfono existente como primer destinatario;
+- agrega pases asignados y confirmados de adultos y niños;
+- agrega `wedding_invitation_contacts` para que varios teléfonos compartan una sola invitación;
+- actualiza las funciones de alta, confirmación y liberación de pases.
 
 En una instalación nueva se ejecutan, en orden:
 
 1. `202608100001_wedding_invitations.sql`
 2. `202608100002_admin_and_ceremony.sql`
+3. `202608110003_family_contacts_and_child_passes.sql`
 
 ## 2. Crear tu usuario administrador
 
@@ -113,21 +116,36 @@ La migración inicia el cupo con la cantidad que ya estaba asignada, para impedi
 
 Ejemplo: si el salón tiene 250 lugares, registra `250`. El sistema nunca permitirá que la suma de pases activos supere ese número.
 
-## 7. Agregar invitados
+## 7. Agregar invitaciones
 
 Desde `/admin` captura:
 
-- nombre completo o nombre de la familia;
-- teléfono a 10 dígitos;
+- el nombre que aparecerá en la invitación, por ejemplo `Bárbara y Pablo`;
+- uno o varios destinatarios, cada uno con nombre y teléfono a 10 dígitos;
 - tipo de invitación;
-- pases del salón, únicamente para `Misa y recepción`.
+- pases de adultos y pases de niños, únicamente para `Misa y recepción`.
+
+Puedes registrar de 1 a 5 destinatarios. Todos reciben el mismo enlace, tienen el mismo ID y consultan la misma confirmación familiar. Confirmar desde un teléfono actualiza inmediatamente lo que verá el otro.
+
+Ejemplo:
+
+```text
+Invitación: Bárbara y Pablo
+Destinatario 1: Bárbara / 4611111111
+Destinatario 2: Pablo / 4612222222
+Adultos: 2
+Niños: 2
+Total consumido del salón: 4
+```
+
+El ID `EB-000001` se genera automáticamente; no se captura manualmente.
 
 Tipos disponibles:
 
 ### Misa y recepción
 
 - Consume pases del cupo del salón.
-- El invitado elige cuántos usará, sin superar su límite.
+- Los invitados eligen por separado cuántos adultos y niños asistirán, sin superar cada límite.
 - Aparece en las estadísticas de pases asignados y confirmados.
 
 ### Solo acompañar a misa
@@ -137,14 +155,25 @@ Tipos disponibles:
 - El invitado confirma si asistirá a la ceremonia religiosa.
 - Aparece por separado en `Confirmados solo misa`.
 
-## 8. Liberar y reasignar pases
+## 8. Buscar invitaciones
+
+En el administrador puedes buscar por:
+
+- nombre de la invitación;
+- nombre de cualquiera de los destinatarios;
+- cualquiera de sus teléfonos;
+- ID, por ejemplo `EB-000001`.
+
+En la página pública también se puede localizar con nombre, teléfono o ID. El enlace privado contiene el token y el ancla `#confirmacion`, por lo que abre directamente la tarjeta familiar sin pasar por el buscador ni la portada. Los enlaces anteriores que solo tengan `?i=TOKEN` también se reconocen y abren directamente.
+
+## 9. Liberar y reasignar pases
 
 Ejemplo: una familia tiene 5 pases y confirma 3.
 
-1. El panel muestra `2 pases liberables`.
+1. El panel muestra `2 pases liberables` y conserva su categoría.
 2. En la tarjeta de esa familia presiona **Liberar 2**.
 3. Confirma la acción.
-4. El máximo de esa familia baja de 5 a 3.
+4. El máximo de adultos y niños baja a lo realmente confirmado.
 5. Los 2 pases vuelven a **Disponibles**.
 6. Puedes asignarlos a una invitación nueva o aumentar otra existente.
 
@@ -152,17 +181,20 @@ Los pases de invitaciones pendientes no se liberan, porque la familia todavía p
 
 Una vez liberados, el invitado no podrá aumentar su confirmación por encima del nuevo máximo. Para devolverle lugares tendrás que editar su invitación desde el panel, siempre que exista cupo.
 
-## 9. Enviar por WhatsApp
+## 10. Enviar por WhatsApp
 
-Cada tarjeta tiene **WhatsApp**. El botón abre un mensaje dirigido al teléfono registrado e incluye:
+Cada tarjeta tiene un botón de **WhatsApp** por destinatario. Todos los mensajes incluyen:
 
-- nombre del invitado;
-- número de pases, cuando corresponde;
-- enlace privado `?i=TOKEN#confirmacion`.
+- nombre mostrado en la invitación;
+- pases de adultos y niños;
+- ID legible `EB-000001`;
+- enlace privado `?i=TOKEN#confirmacion` que abre directamente la invitación familiar.
 
 El administrador revisa el texto y pulsa **Enviar**. Esto usa `wa.me` y no requiere pagar una API.
 
-## 10. Pruebas recomendadas
+Después de guardar su confirmación, el invitado ve el resumen durante tres segundos y el sistema lo devuelve automáticamente a `/`, sin el token privado. Ahí puede abrir y disfrutar la invitación oficial completa; cuando llegue nuevamente a la sección de confirmación verá el buscador normal. También puede usar el botón **Ver invitación completa** de inmediato.
+
+## 11. Pruebas recomendadas
 
 Ejecuta:
 
@@ -177,16 +209,20 @@ Prueba:
 
 1. login correcto e incorrecto;
 2. acceso directo a `/admin` sin sesión;
-3. alta de una invitación de recepción;
+3. alta de una invitación de recepción con dos teléfonos;
 4. intento de superar el cupo total;
 5. alta de una invitación de solo misa;
 6. confirmación de ambos tipos desde la página pública;
-7. familia con menos asistentes que pases;
-8. liberación y reasignación de pases;
-9. enlace de WhatsApp;
-10. cierre de sesión.
+7. búsqueda por ambos teléfonos y por ID;
+8. familia con 2 adultos y 2 niños que confirma cantidades distintas;
+9. liberación y reasignación de pases conservando la categoría;
+10. enlace de WhatsApp para cada destinatario y apertura directa en `#confirmacion`;
+11. ausencia de la portada de apertura cuando se entra con el enlace privado;
+12. regreso a `/` sin `?i=TOKEN` después de confirmar;
+13. buscador normal visible al volver a la sección de confirmación;
+14. cierre de sesión.
 
-## 11. Seguridad aplicada
+## 12. Seguridad aplicada
 
 - cookies de sesión `HttpOnly`, `SameSite=Strict` y `Secure` en producción;
 - validación del usuario con Supabase Auth en el servidor;

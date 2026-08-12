@@ -1,14 +1,22 @@
 <script lang="ts">
   type InvitationType = 'reception' | 'ceremony_only';
+  type InvitationMode = 'individual' | 'group';
   type Status = 'pending' | 'confirmed' | 'declined';
+  type Contact = { id?: string; contactName: string; phone: string; isPrimary?: boolean };
   type Guest = {
     id: string;
     token: string;
+    invitationCode: string;
     fullName: string;
-    phone: string;
+    contacts: Contact[];
+    invitationMode: InvitationMode;
     invitationType: InvitationType;
     allowedPasses: number;
     confirmedPasses: number;
+    allowedAdults: number;
+    allowedChildren: number;
+    confirmedAdults: number;
+    confirmedChildren: number;
     status: Status;
     note: string | null;
     isActive: boolean;
@@ -19,6 +27,10 @@
     capacity: number;
     assigned: number;
     confirmed: number;
+    assignedAdults: number;
+    assignedChildren: number;
+    confirmedAdults: number;
+    confirmedChildren: number;
     available: number;
     releasable: number;
     pendingInvitations: number;
@@ -27,7 +39,7 @@
 
   let { displayName }: { displayName: string } = $props();
   let guests = $state<Guest[]>([]);
-  let stats = $state<Stats>({ capacity: 0, assigned: 0, confirmed: 0, available: 0, releasable: 0, pendingInvitations: 0, ceremonyConfirmed: 0 });
+  let stats = $state<Stats>({ capacity: 0, assigned: 0, confirmed: 0, assignedAdults: 0, assignedChildren: 0, confirmedAdults: 0, confirmedChildren: 0, available: 0, releasable: 0, pendingInvitations: 0, ceremonyConfirmed: 0 });
   let loading = $state(true);
   let saving = $state(false);
   let error = $state('');
@@ -36,14 +48,19 @@
   let capacityDraft = $state(0);
   let editingId = $state<string | null>(null);
   let fullName = $state('');
-  let phone = $state('');
+  let contacts = $state<Contact[]>([{ contactName: '', phone: '' }]);
+  let invitationMode = $state<InvitationMode>('individual');
   let invitationType = $state<InvitationType>('reception');
-  let allowedPasses = $state(1);
+  let allowedAdults = $state(1);
+  let allowedChildren = $state(0);
   let isActive = $state(true);
 
   const filteredGuests = $derived(guests.filter((guest) => {
     const needle = query.trim().toLocaleLowerCase('es-MX');
-    return !needle || guest.fullName.toLocaleLowerCase('es-MX').includes(needle) || guest.phone.includes(needle);
+    return !needle
+      || guest.fullName.toLocaleLowerCase('es-MX').includes(needle)
+      || guest.invitationCode.toLocaleLowerCase('es-MX').includes(needle)
+      || guest.contacts.some((contact) => contact.contactName.toLocaleLowerCase('es-MX').includes(needle) || contact.phone.includes(needle));
   }));
 
   async function api(url: string, options?: RequestInit) {
@@ -75,18 +92,35 @@
   function resetForm() {
     editingId = null;
     fullName = '';
-    phone = '';
+    contacts = [{ contactName: '', phone: '' }];
+    invitationMode = 'individual';
     invitationType = 'reception';
-    allowedPasses = 1;
+    allowedAdults = 1;
+    allowedChildren = 0;
     isActive = true;
+  }
+
+  function addContact() {
+    if (invitationMode === 'group' && contacts.length < 5) contacts.push({ contactName: '', phone: '' });
+  }
+
+  function selectInvitationMode(mode: InvitationMode) {
+    invitationMode = mode;
+    if (mode === 'individual' && contacts.length > 1) contacts = [contacts[0]];
+  }
+
+  function removeContact(index: number) {
+    if (contacts.length > 1) contacts.splice(index, 1);
   }
 
   function editGuest(guest: Guest) {
     editingId = guest.id;
     fullName = guest.fullName;
-    phone = guest.phone.replace(/^\+52/, '');
+    contacts = guest.contacts.map((contact) => ({ contactName: contact.contactName, phone: contact.phone.replace(/^\+52/, '') }));
+    invitationMode = guest.invitationMode;
     invitationType = guest.invitationType;
-    allowedPasses = guest.invitationType === 'reception' ? guest.allowedPasses : 0;
+    allowedAdults = guest.invitationType === 'reception' ? guest.allowedAdults : 0;
+    allowedChildren = guest.invitationType === 'reception' ? guest.allowedChildren : 0;
     isActive = guest.isActive;
     success = '';
     error = '';
@@ -101,9 +135,11 @@
     try {
       const payload = {
         fullName: fullName.trim(),
-        phone: phone.trim(),
+        contacts: contacts.map((contact) => ({ contactName: contact.contactName.trim(), phone: contact.phone.trim() })),
+        invitationMode,
         invitationType,
-        allowedPasses: invitationType === 'reception' ? Number(allowedPasses) : 0,
+        allowedAdults: invitationType === 'reception' ? Number(allowedAdults) : 0,
+        allowedChildren: invitationType === 'reception' ? Number(allowedChildren) : 0,
         isActive
       };
       await api(editingId ? `/api/admin/guests/${editingId}` : '/api/admin/guests', {
@@ -111,7 +147,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      success = editingId ? 'Invitación actualizada.' : 'Invitado agregado. Ya puedes enviarle su enlace por WhatsApp.';
+      success = editingId ? 'Invitación actualizada.' : 'Invitación creada. Ya puedes compartirla por WhatsApp.';
       resetForm();
       await loadDashboard();
     } catch (reason) {
@@ -122,8 +158,10 @@
   }
 
   async function releasePasses(guest: Guest) {
-    const amount = guest.allowedPasses - guest.confirmedPasses;
-    if (amount <= 0 || !window.confirm(`¿Liberar ${amount} ${amount === 1 ? 'pase' : 'pases'} de ${guest.fullName}? Después su máximo quedará en ${guest.confirmedPasses}.`)) return;
+    const adults = guest.allowedAdults - guest.confirmedAdults;
+    const children = guest.allowedChildren - guest.confirmedChildren;
+    const amount = adults + children;
+    if (amount <= 0 || !window.confirm(`¿Liberar ${amount} pases de ${guest.fullName}? Se liberarán ${adults} de adulto y ${children} de niño.`)) return;
     error = '';
     success = '';
     try {
@@ -132,7 +170,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'release' })
       });
-      success = `${amount} ${amount === 1 ? 'pase liberado' : 'pases liberados'} y disponible para otra invitación.`;
+      success = `${amount} ${amount === 1 ? 'pase liberado' : 'pases liberados'} y disponibles para otra invitación.`;
       await loadDashboard();
     } catch (reason) {
       error = reason instanceof Error ? reason.message : 'No pudimos liberar los pases.';
@@ -156,15 +194,24 @@
   }
 
   function invitationUrl(guest: Guest) {
-    return `${window.location.origin}/?i=${guest.token}#confirmacion`;
+    const url = new URL('/', window.location.origin);
+    url.searchParams.set('i', guest.token);
+    url.hash = 'confirmacion';
+    return url.toString();
+  }
+
+  function whatsappMessage(guest: Guest) {
+    const link = invitationUrl(guest);
+    const greeting = `Hola ${guest.fullName}`;
+    const invitationText = guest.invitationMode === 'individual'
+      ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
+      : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
+    return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación y confirma la asistencia directamente: ${link}`;
   }
 
   function whatsappUrl(guest: Guest) {
-    const link = invitationUrl(guest);
-    const message = guest.invitationType === 'ceremony_only'
-      ? `Hola ${guest.fullName}, Edgar y Brenda queremos invitarte a acompañarnos en nuestra misa de boda. Puedes consultar y confirmar tu invitación aquí: ${link}`
-      : `Hola ${guest.fullName}, Edgar y Brenda queremos compartir contigo nuestra invitación de boda. Tienes ${guest.allowedPasses} ${guest.allowedPasses === 1 ? 'pase' : 'pases'}. Puedes verla y confirmar aquí: ${link}`;
-    return `https://wa.me/${guest.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    const phone = guest.invitationMode === 'individual' ? guest.contacts[0]?.phone.replace(/\D/g, '') : '';
+    return `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage(guest))}`;
   }
 
   async function copyInvitation(guest: Guest) {
@@ -187,11 +234,11 @@
 
 <main class="dashboard-shell">
   <section class="dashboard-intro">
-    <div><p class="eyebrow">Boda Edgar & Brenda</p><h1>Invitados y pases</h1><p>Administra el cupo del salón y las confirmaciones de misa desde un solo lugar.</p></div>
+    <div><p class="eyebrow">Boda Edgar & Brenda</p><h1>Invitados y pases</h1><p>Administra invitaciones familiares, destinatarios y pases de adultos y niños.</p></div>
     <form class="capacity-form" onsubmit={(event) => { event.preventDefault(); saveCapacity(); }}>
       <label for="capacity">Cupo total del salón</label>
       <div><input id="capacity" type="number" min="0" max="2000" bind:value={capacityDraft} /><button type="submit">Guardar cupo</button></div>
-      <small>Primero coloca aquí la capacidad real contratada para la recepción.</small>
+      <small>El cupo considera adultos y niños. Las invitaciones de solo misa no lo consumen.</small>
     </form>
   </section>
 
@@ -200,9 +247,9 @@
 
   <section class="stats-grid" aria-label="Resumen de invitados">
     <article><span>Cupo salón</span><strong>{stats.capacity}</strong></article>
-    <article><span>Pases asignados</span><strong>{stats.assigned}</strong></article>
+    <article><span>Pases asignados</span><strong>{stats.assigned}</strong><small>{stats.assignedAdults} adultos · {stats.assignedChildren} niños</small></article>
     <article class="stat-highlight"><span>Disponibles</span><strong>{stats.available}</strong></article>
-    <article><span>Confirmados salón</span><strong>{stats.confirmed}</strong></article>
+    <article><span>Confirmados salón</span><strong>{stats.confirmed}</strong><small>{stats.confirmedAdults} adultos · {stats.confirmedChildren} niños</small></article>
     <article class:hasAlert={stats.releasable > 0}><span>Pases liberables</span><strong>{stats.releasable}</strong></article>
     <article><span>Confirmados solo misa</span><strong>{stats.ceremonyConfirmed}</strong></article>
   </section>
@@ -210,13 +257,28 @@
   <section class="workspace-grid">
     <article id="guest-form" class="panel form-panel">
       <p class="eyebrow">{editingId ? 'Editar invitación' : 'Nueva invitación'}</p>
-      <h2>{editingId ? 'Actualizar invitado' : 'Agregar invitado'}</h2>
+      <h2>{editingId ? 'Actualizar invitación' : 'Agregar invitación'}</h2>
       <form onsubmit={(event) => { event.preventDefault(); saveGuest(); }}>
-        <label for="full-name">Nombre completo o familia</label>
-        <input id="full-name" bind:value={fullName} minlength="5" maxlength="120" required placeholder="Ej. Familia Pérez González" />
+        <fieldset>
+          <legend>Modalidad de la invitación</legend>
+          <label class:active={invitationMode === 'individual'}><input type="radio" name="invitation-mode" checked={invitationMode === 'individual'} onchange={() => selectInvitationMode('individual')} /> Individual</label>
+          <label class:active={invitationMode === 'group'}><input type="radio" name="invitation-mode" checked={invitationMode === 'group'} onchange={() => selectInvitationMode('group')} /> Conjunta o familiar</label>
+        </fieldset>
 
-        <label for="phone">Teléfono a 10 dígitos</label>
-        <input id="phone" bind:value={phone} inputmode="tel" required placeholder="4611234567" />
+        <label for="full-name">Nombre mostrado en la invitación</label>
+        <input id="full-name" bind:value={fullName} minlength="2" maxlength="120" required placeholder={invitationMode === 'individual' ? 'Ej. Emmanuel' : 'Ej. Bárbara y Pablo'} />
+
+        <div class="contacts-heading"><div><span>{invitationMode === 'individual' ? 'Destinatario' : 'Contactos de la invitación'}</span><small>{invitationMode === 'individual' ? 'El enlace se enviará directamente a esta persona.' : 'Todos comparten el mismo enlace y una sola confirmación.'}</small></div>{#if invitationMode === 'group' && contacts.length < 5}<button type="button" onclick={addContact}>+ Agregar teléfono</button>{/if}</div>
+        <div class="contact-list">
+          {#each contacts as contact, index}
+            <div class="contact-row">
+              <label>Nombre<input bind:value={contact.contactName} minlength="2" maxlength="80" required placeholder={index === 0 ? 'Bárbara' : 'Pablo'} /></label>
+              <label>Teléfono<input bind:value={contact.phone} inputmode="tel" required placeholder="4611234567" /></label>
+              {#if contacts.length > 1}<button class="remove-contact" type="button" aria-label={`Quitar a ${contact.contactName || 'destinatario'}`} onclick={() => removeContact(index)}>×</button>{/if}
+            </div>
+          {/each}
+        </div>
+        {#if invitationMode === 'group' && contacts.length > 1}<small class="field-help">El botón “WhatsApp · Todos” preparará un solo mensaje; en WhatsApp seleccionarás estos contactos para compartirlo.</small>{/if}
 
         <fieldset>
           <legend>Tipo de invitación</legend>
@@ -225,44 +287,45 @@
         </fieldset>
 
         {#if invitationType === 'reception'}
-          <label for="passes">Pases para el salón</label>
-          <input id="passes" type="number" min="1" max="20" bind:value={allowedPasses} required />
-          <small class="field-help">Hay {stats.available} pases disponibles. Al editar, ya están considerados los pases actuales de esa invitación.</small>
+          <div class="pass-inputs">
+            <label for="adult-passes">Pases de adultos<input id="adult-passes" type="number" min="0" max="20" bind:value={allowedAdults} required /></label>
+            <label for="child-passes">Pases de niños<input id="child-passes" type="number" min="0" max="20" bind:value={allowedChildren} required /></label>
+          </div>
+          <small class="field-help">Total de esta invitación: {Number(allowedAdults) + Number(allowedChildren)}. Hay {stats.available} pases disponibles.</small>
         {:else}
-          <p class="mass-note">Esta invitación no consume pases del salón. La persona únicamente confirmará asistencia a la misa.</p>
+          <p class="mass-note">Esta invitación no consume lugares del salón. Los destinatarios solo confirmarán asistencia a misa.</p>
         {/if}
 
-        {#if editingId}
-          <label class="active-check"><input type="checkbox" bind:checked={isActive} /> Invitación activa</label>
-        {/if}
+        {#if editingId}<label class="active-check"><input type="checkbox" bind:checked={isActive} /> Invitación activa</label>{/if}
 
-        <div class="form-actions"><button class="primary-button" type="submit" disabled={saving}>{saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Agregar invitado'}</button>{#if editingId}<button class="secondary-button" type="button" onclick={resetForm}>Cancelar</button>{/if}</div>
+        <div class="form-actions"><button class="primary-button" type="submit" disabled={saving}>{saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear invitación'}</button>{#if editingId}<button class="secondary-button" type="button" onclick={resetForm}>Cancelar</button>{/if}</div>
       </form>
     </article>
 
     <article class="panel guest-panel">
-      <div class="panel-heading"><div><p class="eyebrow">Directorio</p><h2>{guests.length} invitaciones</h2></div><input class="search" bind:value={query} placeholder="Buscar nombre o teléfono" aria-label="Buscar invitados" /></div>
+      <div class="panel-heading"><div><p class="eyebrow">Directorio</p><h2>{guests.length} invitaciones</h2></div><input class="search" bind:value={query} placeholder="Buscar nombre, teléfono o ID" aria-label="Buscar invitaciones" /></div>
 
       {#if loading}
-        <p class="empty-state">Cargando invitados…</p>
+        <p class="empty-state">Cargando invitaciones…</p>
       {:else if filteredGuests.length === 0}
-        <p class="empty-state">No encontramos invitados con esa búsqueda.</p>
+        <p class="empty-state">No encontramos invitaciones con esa búsqueda.</p>
       {:else}
         <div class="guest-list">
           {#each filteredGuests as guest (guest.id)}
             <article class:inactive={!guest.isActive} class="guest-card">
               <div class="guest-main">
-                <div><h3>{guest.fullName}</h3><p>{guest.phone} · {guest.invitationType === 'reception' ? 'Misa y recepción' : 'Solo misa'}</p></div>
+                <div><span class="invitation-id">{guest.invitationCode}</span><h3>{guest.fullName}</h3><p>{guest.invitationMode === 'individual' ? 'Individual' : 'Conjunta'} · {guest.invitationType === 'reception' ? 'Misa y recepción' : 'Solo misa'} · {guest.contacts.length} {guest.contacts.length === 1 ? 'contacto' : 'contactos'}</p></div>
                 <span class:confirmed={guest.status === 'confirmed'} class:declined={guest.status === 'declined'} class="status">{guest.status === 'confirmed' ? 'Confirmado' : guest.status === 'declined' ? 'No asistirá' : 'Pendiente'}</span>
               </div>
+              <div class="contact-summary">{#each guest.contacts as contact}<span>{contact.contactName} · {contact.phone}</span>{/each}</div>
               {#if guest.invitationType === 'reception'}
-                <div class="pass-row"><span>Asignados <strong>{guest.allowedPasses}</strong></span><span>Confirmados <strong>{guest.confirmedPasses}</strong></span><span>Sin usar <strong>{Math.max(0, guest.allowedPasses - guest.confirmedPasses)}</strong></span></div>
+                <div class="pass-row"><span>Asignados <strong>{guest.allowedPasses}</strong><small>{guest.allowedAdults} A · {guest.allowedChildren} N</small></span><span>Confirmados <strong>{guest.confirmedPasses}</strong><small>{guest.confirmedAdults} A · {guest.confirmedChildren} N</small></span><span>Sin usar <strong>{Math.max(0, guest.allowedPasses - guest.confirmedPasses)}</strong></span></div>
               {:else}
-                <p class="ceremony-label">Acompañará únicamente en la ceremonia religiosa.</p>
+                <p class="ceremony-label">Acompañarán únicamente en la ceremonia religiosa.</p>
               {/if}
               {#if guest.note}<p class="guest-note">“{guest.note}”</p>{/if}
               <div class="guest-actions">
-                <a href={whatsappUrl(guest)} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                <a href={whatsappUrl(guest)} target="_blank" rel="noopener noreferrer" title={guest.invitationMode === 'group' ? `Selecciona en WhatsApp a: ${guest.contacts.map((contact) => contact.contactName).join(', ')}` : undefined}>{guest.invitationMode === 'individual' ? `WhatsApp · ${guest.contacts[0]?.contactName ?? guest.fullName}` : 'WhatsApp · Todos'}</a>
                 <button type="button" onclick={() => copyInvitation(guest)}>Copiar enlace</button>
                 <button type="button" onclick={() => editGuest(guest)}>Editar</button>
                 {#if guest.isActive && guest.invitationType === 'reception' && guest.status !== 'pending' && guest.allowedPasses > guest.confirmedPasses}
@@ -290,7 +353,7 @@
   h2 { margin: .2rem 0 1.3rem; font-size: 2rem; }
   .dashboard-intro > div > p:last-child { max-width: 650px; color: var(--muted); line-height: 1.7; }
   .capacity-form { padding: 1.2rem; border: 1px solid rgba(70,80,68,.16); background: rgba(255,255,255,.72); }
-  .capacity-form label, .form-panel > form > label, fieldset legend { display: block; margin-bottom: .5rem; color: var(--sage-dark); font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+  .capacity-form label, .form-panel > form > label, fieldset legend, .contacts-heading span, .pass-inputs label, .contact-row label { display: block; margin-bottom: .5rem; color: var(--sage-dark); font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
   .capacity-form div { display: grid; grid-template-columns: 1fr auto; }
   .capacity-form input, .capacity-form button { min-height: 44px; }
   .capacity-form button, .primary-button { border: 1px solid var(--sage-dark); background: var(--sage-dark); color: white; cursor: pointer; font-weight: 700; }
@@ -301,21 +364,34 @@
   .notice--error { border-color: rgba(143,75,64,.25); background: #f8eeeb; color: #74443c; }
   .notice--success { border-color: rgba(65,109,78,.25); background: #edf5ee; color: #315f48; }
   .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: .7rem; margin: 2rem 0; }
-  .stats-grid article { min-height: 118px; display: flex; flex-direction: column; justify-content: space-between; padding: 1.1rem; border: 1px solid rgba(70,80,68,.15); background: rgba(255,255,255,.72); }
+  .stats-grid article { min-height: 124px; display: flex; flex-direction: column; justify-content: space-between; padding: 1.1rem; border: 1px solid rgba(70,80,68,.15); background: rgba(255,255,255,.72); }
   .stats-grid span { color: var(--muted); font-size: .67rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .stats-grid strong { color: var(--sage-dark); font-family: var(--serif); font-size: 2.3rem; font-weight: 400; }
+  .stats-grid small { color: var(--muted); font-size: .62rem; }
   .stats-grid .stat-highlight { background: var(--sage-dark); }
   .stats-grid .stat-highlight span, .stats-grid .stat-highlight strong { color: white; }
   .stats-grid .hasAlert { border-color: rgba(183,155,100,.8); background: #fff9eb; }
-  .workspace-grid { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+  .workspace-grid { display: grid; grid-template-columns: minmax(330px, 420px) minmax(0, 1fr); gap: 1rem; align-items: start; }
   .panel { padding: clamp(1.2rem, 3vw, 2rem); border: 1px solid rgba(70,80,68,.16); background: rgba(255,255,255,.78); box-shadow: 0 18px 45px rgba(48,45,41,.06); }
   .form-panel { position: sticky; top: 1rem; scroll-margin-top: 1rem; }
   .form-panel form > label { margin-top: 1rem; }
   .form-panel input:not([type='radio']):not([type='checkbox']) { width: 100%; min-height: 46px; }
+  .contacts-heading { display: flex; align-items: end; justify-content: space-between; gap: .5rem; margin-top: 1.2rem; }
+  .contacts-heading span { margin: 0; }
+  .contacts-heading small { display: block; margin-top: .2rem; color: var(--muted); font-size: .68rem; }
+  .contacts-heading button { border: 0; background: none; color: var(--sage-dark); cursor: pointer; font-size: .72rem; font-weight: 700; }
+  .contact-list { display: grid; gap: .55rem; margin-top: .7rem; }
+  .contact-row { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .75rem; border: 1px solid rgba(70,80,68,.14); background: rgba(242,244,238,.55); }
+  .contact-row label { margin: 0; }
+  .contact-row input { margin-top: .35rem; letter-spacing: normal; text-transform: none; }
+  .remove-contact { position: absolute; top: -.55rem; right: -.45rem; width: 24px; height: 24px; border: 1px solid rgba(120,70,60,.25); border-radius: 50%; background: white; color: #74443c; cursor: pointer; }
   fieldset { display: grid; grid-template-columns: 1fr; gap: .5rem; margin: 1.2rem 0 0; padding: 0; border: 0; }
   fieldset label { display: flex; gap: .55rem; align-items: center; min-height: 44px; padding: .7rem; border: 1px solid rgba(70,80,68,.16); color: var(--muted); cursor: pointer; font-size: .8rem; }
   fieldset label.active { border-color: var(--gold); background: rgba(183,155,100,.08); color: var(--sage-dark); }
   fieldset input { accent-color: var(--sage-dark); }
+  .pass-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1rem; }
+  .pass-inputs label { margin: 0; }
+  .pass-inputs input { margin-top: .4rem; letter-spacing: normal; }
   .field-help { display: block; margin-top: .5rem; color: var(--muted); line-height: 1.45; }
   .mass-note { padding: .85rem; background: #f0f4ed; color: var(--sage-dark); font-size: .8rem; line-height: 1.55; }
   .active-check { display: flex !important; align-items: center; gap: .5rem; text-transform: none !important; letter-spacing: 0 !important; }
@@ -325,18 +401,22 @@
   .panel-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
   .panel-heading h2 { margin-bottom: 0; }
   .search { width: min(280px, 100%); min-height: 44px; }
-  .guest-list { display: grid; gap: .7rem; max-height: 920px; overflow: auto; padding-right: .25rem; }
+  .guest-list { display: grid; gap: .7rem; max-height: 980px; overflow: auto; padding-right: .25rem; }
   .guest-card { padding: 1rem; border: 1px solid rgba(70,80,68,.14); background: white; }
   .guest-card.inactive { opacity: .55; }
   .guest-main { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+  .invitation-id { display: inline-block; margin-bottom: .35rem; padding: .18rem .4rem; background: #f1eee6; color: #725e37; font-size: .62rem; font-weight: 800; letter-spacing: .08em; }
   .guest-main h3 { margin: 0 0 .25rem; font-size: 1.2rem; }
   .guest-main p { margin: 0; color: var(--muted); font-size: .75rem; }
   .status { flex: 0 0 auto; padding: .34rem .52rem; border-radius: 99px; background: #eeeae0; color: var(--muted); font-size: .62rem; font-weight: 750; text-transform: uppercase; }
   .status.confirmed { background: #e4f0e5; color: #315f48; }
   .status.declined { background: #f3e7e4; color: #74443c; }
+  .contact-summary { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .7rem; }
+  .contact-summary span { padding: .25rem .42rem; background: #f5f5f1; color: var(--muted); font-size: .66rem; }
   .pass-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: .85rem; padding: .7rem 0; border-block: 1px solid rgba(70,80,68,.1); }
   .pass-row span { color: var(--muted); font-size: .68rem; text-align: center; }
   .pass-row strong { display: block; margin-top: .2rem; color: var(--ink); font-family: var(--serif); font-size: 1.25rem; }
+  .pass-row small { display: block; margin-top: .1rem; font-size: .6rem; }
   .ceremony-label, .guest-note { margin: .8rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
   .ceremony-label { padding: .65rem; background: #f0f4ed; }
   .guest-note { font-family: var(--serif); font-style: italic; }
@@ -346,5 +426,5 @@
   .guest-actions .release-button { border-color: var(--gold); color: #7a612e; }
   .empty-state { padding: 4rem 1rem; color: var(--muted); text-align: center; }
   @media (max-width: 980px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .workspace-grid { grid-template-columns: 1fr; } .form-panel { position: static; } }
-  @media (max-width: 680px) { .admin-header span { display: none; } .dashboard-intro { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .panel-heading { align-items: stretch; flex-direction: column; } .search { width: 100%; } .guest-main { flex-direction: column; } }
+  @media (max-width: 680px) { .admin-header span { display: none; } .dashboard-intro { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .panel-heading { align-items: stretch; flex-direction: column; } .search { width: 100%; } .guest-main { flex-direction: column; } .contact-row, .pass-inputs { grid-template-columns: 1fr; } }
 </style>

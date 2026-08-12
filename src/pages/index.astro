@@ -33,7 +33,7 @@ import { weddingConfig } from '../lib/wedding-config';
     <GuestDetails />
     <Ninos />
     <Gifts amazon={weddingConfig.gifts.amazon} liverpool={weddingConfig.gifts.liverpool} />
-    <Rsvp confirmationWhatsApp={weddingConfig.religious.confirmationWhatsApp} client:visible />
+    <Rsvp confirmationWhatsApp={weddingConfig.religious.confirmationWhatsApp} client:load />
     <Closing />
   </main>
 </Layout>
