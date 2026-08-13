@@ -72,7 +72,6 @@
       if (invitation) {
         populateSelection(invitation);
         confirmationComplete = invitation.status !== 'pending';
-        if (token) focusInvitationCard();
       }
     } catch (error) {
       invitation = null;

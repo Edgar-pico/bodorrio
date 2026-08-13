@@ -196,7 +196,6 @@
   function invitationUrl(guest: Guest) {
     const url = new URL('/', window.location.origin);
     url.searchParams.set('i', guest.token);
-    url.hash = 'confirmacion';
     return url.toString();
   }
 
@@ -206,7 +205,7 @@
     const invitationText = guest.invitationMode === 'individual'
       ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
       : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
-    return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación y confirma la asistencia directamente: ${link}`;
+    return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación para conocer todos los detalles: ${link}`;
   }
 
   function whatsappUrl(guest: Guest) {
