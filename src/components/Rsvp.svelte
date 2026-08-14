@@ -72,6 +72,10 @@
       if (invitation) {
         populateSelection(invitation);
         confirmationComplete = invitation.status !== 'pending';
+<<<<<<< HEAD
+=======
+        if (token) focusInvitationCard();
+>>>>>>> 21be8c9f43b271abb8dd72242f67a66d60ab657c
       }
     } catch (error) {
       invitation = null;

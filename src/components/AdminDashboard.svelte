@@ -205,7 +205,11 @@
     const invitationText = guest.invitationMode === 'individual'
       ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
       : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
+<<<<<<< HEAD
     return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación para conocer todos los detalles: ${link}`;
+=======
+    return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación y confirma la asistencia directamente: ${link}`;
+>>>>>>> 21be8c9f43b271abb8dd72242f67a66d60ab657c
   }
 
   function whatsappUrl(guest: Guest) {
