@@ -4,6 +4,7 @@ import Splash from '../components/Splash.svelte';
 import ProgressPath from '../components/ProgressPath.svelte';
 import Hero from '../components/Hero.svelte';
 import CeremoniaCivil from '../components/CeremoniaCivil.svelte';
+import ChapterMemories from '../components/ChapterMemories.svelte';
 import Comida from '../components/Comida.svelte';
 import Ninos from '../components/Ninos.svelte';
 import Iglesia from '../components/Iglesia.svelte';
@@ -25,6 +26,7 @@ import { weddingConfig } from '../lib/wedding-config';
     <Hero />
     <ChaptersIntro />
     <CeremoniaCivil />
+    <ChapterMemories client:visible />
     <ChapterTransition />
     <Iglesia />
     <Countdown eventDate={weddingConfig.religious.dateIso} dateLabel={weddingConfig.religious.dateLabel} client:visible />
