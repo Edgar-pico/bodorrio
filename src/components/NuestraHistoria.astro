@@ -9,35 +9,635 @@ interface Props {
 }
 
 const {
-  url = null,
-  poster = null,
   title = 'Nuestra historia',
-  description = '',
-  autoplay = false,
-  controls = true
+  description = 'De dos ciudades diferentes, dos historias comenzaron a acercarse sin saberlo.'
 } = Astro.props;
+
+const storyPages = [
+  { page: 1, chapter: 'Portada', title: 'Como si nos conociéramos de toda la vida' },
+  { page: 2, chapter: 'Capítulo 1', title: 'Dos ciudades, un mismo camino' },
+  { page: 3, chapter: 'Capítulo 2', title: 'Una solicitud inesperada' },
+  { page: 4, chapter: 'Capítulo 3', title: 'La conversación de la banca' },
+  { page: 5, chapter: 'Capítulo 4', title: 'Un abrazo antes de volver a clases' },
+  { page: 6, chapter: 'Capítulo 5', title: 'La llamada de Siddhartha' },
+  { page: 7, chapter: 'Capítulo 6', title: 'El viaje y la primera cita' },
+  { page: 8, chapter: 'Capítulo 7', title: 'El beso que tuvo que esperar' },
+  { page: 9, chapter: 'Capítulo 8', title: '¿A dónde vas?' },
+  { page: 10, chapter: 'Capítulo 9', title: 'El comienzo de nosotros' },
+  { page: 11, chapter: 'Capítulo 10', title: 'Días, meses y años' },
+  { page: 12, chapter: 'Capítulo 11', title: 'Elegir continuar juntos' },
+  { page: 13, chapter: 'Capítulo 12', title: 'La pregunta más importante' },
+  { page: 14, chapter: 'Capítulo 13', title: 'Nuestro primer sí' },
+  { page: 15, chapter: 'Capítulo 14', title: 'Nuestra historia continúa' }
+];
 ---
 
-<section id="historia" class="story-section story-video reveal-section" aria-labelledby="story-title">
-  <div class="section-shell section-shell--narrow">
+<section id="historia" class="story-comic reveal-section" aria-labelledby="story-title" data-story-root>
+  <div class="story-glow story-glow--one" aria-hidden="true"></div>
+  <div class="story-glow story-glow--two" aria-hidden="true"></div>
+
+  <header class="story-header">
     <p class="eyebrow">¿Cómo llegamos hasta aquí?</p>
     <h2 id="story-title">{title}</h2>
-    <p class="lead">{description}</p>
+    <p class="story-lead">{description}</p>
     <p class="story-copy">Y aunque hoy conoces el final… quizá no conoces todo lo que pasó antes.</p>
+    <div class="story-ornament" aria-hidden="true"><i></i><span>✦</span><i></i></div>
+  </header>
 
-    <div class="cinema-frame">
-      {url ? (
-        <video src={url} poster={poster ?? undefined} autoplay={autoplay} controls={controls} playsinline preload="metadata">
-          Tu navegador no puede reproducir este video.
-        </video>
-      ) : (
-        <div class="cinema-placeholder">
-          <span class="cinema-stars" aria-hidden="true">✦ · ✦ · ✦</span>
-          <strong>Próximamente</strong>
-          <span>Nuestra historia</span>
-          <small>Acámbaro · Celaya · un mismo camino</small>
-        </div>
-      )}
+  <div class="story-cinema" aria-label="Historieta de Brenda y Edgar">
+    <div class="film-topbar">
+      <span>Nuestra historia · Brenda &amp; Edgar</span>
+      <span data-story-counter>01 / {String(storyPages.length).padStart(2, '0')}</span>
     </div>
+
+    <div class="film-progress" aria-hidden="true">
+      <span data-story-progress></span>
+    </div>
+
+    <div class="story-stage" data-story-stage>
+      {storyPages.map((item, index) => {
+        const number = String(item.page).padStart(2, '0');
+        const jpg = `/nuestra-historia/pagina-${number}.jpg`;
+        const webp = `/nuestra-historia/pagina-${number}.webp`;
+
+        return (
+          <article
+            class:list={['story-slide', { 'is-active': index === 0 }]}
+            aria-hidden={index === 0 ? 'false' : 'true'}
+            data-story-slide
+            data-full={jpg}
+          >
+            <div class="story-page-meta">
+              <span>{item.chapter}</span>
+              <strong>{item.title}</strong>
+            </div>
+
+            <a class="story-page-link" href={jpg} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${item.title} en tamaño completo`}>
+              <picture>
+                <source srcset={webp} type="image/webp" />
+                <img
+                  src={jpg}
+                  alt={`${item.chapter}: ${item.title}`}
+                  width="1600"
+                  height="2000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
+            </a>
+          </article>
+        );
+      })}
+    </div>
+
+    <div class="story-controls">
+      <button class="story-nav" type="button" data-story-prev disabled aria-label="Página anterior">
+        <span aria-hidden="true">←</span>
+        <span>Anterior</span>
+      </button>
+
+      <a
+        class="story-open"
+        href="/nuestra-historia/pagina-01.jpg"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-story-open
+      >
+        Ver página completa <span aria-hidden="true">↗</span>
+      </a>
+
+      <button class="story-nav" type="button" data-story-next aria-label="Siguiente página">
+        <span>Siguiente</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </div>
+
+    <div class="story-dots" aria-label="Ir a un capítulo">
+      {storyPages.map((item, index) => (
+        <button
+          type="button"
+          class:list={['story-dot', { 'is-active': index === 0 }]}
+          aria-label={`Ir a ${item.chapter}: ${item.title}`}
+          aria-current={index === 0 ? 'page' : undefined}
+          data-story-dot
+          data-index={index}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </button>
+      ))}
+    </div>
+
+    <p class="story-hint">Usa las flechas para avanzar. También puedes tocar la página para abrirla completa.</p>
   </div>
 </section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-story-root]').forEach((root) => {
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-story-slide]'));
+    const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-story-dot]'));
+    const prev = root.querySelector<HTMLButtonElement>('[data-story-prev]');
+    const next = root.querySelector<HTMLButtonElement>('[data-story-next]');
+    const counter = root.querySelector<HTMLElement>('[data-story-counter]');
+    const progress = root.querySelector<HTMLElement>('[data-story-progress]');
+    const openLink = root.querySelector<HTMLAnchorElement>('[data-story-open]');
+    const stage = root.querySelector<HTMLElement>('[data-story-stage]');
+
+    if (!slides.length || !prev || !next || !counter || !progress || !openLink || !stage) return;
+
+    let activeIndex = 0;
+    let startX = 0;
+
+    const render = (scrollActiveDot = false) => {
+      slides.forEach((slide, index) => {
+        const active = index === activeIndex;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+
+      dots.forEach((dot, index) => {
+        const active = index === activeIndex;
+        dot.classList.toggle('is-active', active);
+        if (active) dot.setAttribute('aria-current', 'page');
+        else dot.removeAttribute('aria-current');
+      });
+
+      prev.disabled = activeIndex === 0;
+      next.disabled = activeIndex === slides.length - 1;
+      counter.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+      progress.style.width = `${((activeIndex + 1) / slides.length) * 100}%`;
+
+      const full = slides[activeIndex]?.dataset.full;
+      if (full) openLink.href = full;
+
+      const activeDot = dots[activeIndex];
+      if (scrollActiveDot && activeDot) {
+        activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    };
+
+    const goTo = (index: number) => {
+      activeIndex = Math.max(0, Math.min(index, slides.length - 1));
+      render(true);
+    };
+
+    prev.addEventListener('click', () => goTo(activeIndex - 1));
+    next.addEventListener('click', () => goTo(activeIndex + 1));
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const index = Number(dot.dataset.index);
+        if (Number.isFinite(index)) goTo(index);
+      });
+    });
+
+    root.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goTo(activeIndex - 1);
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goTo(activeIndex + 1);
+      }
+    });
+
+    stage.addEventListener('pointerdown', (event: PointerEvent) => {
+      startX = event.clientX;
+    });
+
+    stage.addEventListener('pointerup', (event: PointerEvent) => {
+      const delta = event.clientX - startX;
+      if (Math.abs(delta) < 55) return;
+
+      if (delta < 0) goTo(activeIndex + 1);
+      else goTo(activeIndex - 1);
+    });
+
+    render(false);
+  });
+</script>
+
+<style>
+  .story-comic {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(5.5rem, 9vw, 8.5rem) clamp(0.8rem, 3vw, 2.5rem);
+    border-block: 1px solid rgba(185, 151, 88, 0.25);
+    background:
+      radial-gradient(circle at 50% 0%, rgba(184, 150, 85, 0.08), transparent 34rem),
+      #20251f;
+    color: #f4f0e8;
+    content-visibility: auto;
+    contain-intrinsic-size: 1500px;
+  }
+
+  .story-comic::before {
+    content: '';
+    position: absolute;
+    inset: 1rem;
+    border: 1px solid rgba(184, 150, 85, 0.12);
+    pointer-events: none;
+  }
+
+  .story-glow {
+    position: absolute;
+    width: 36rem;
+    height: 36rem;
+    border-radius: 50%;
+    background: rgba(164, 124, 67, 0.08);
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  .story-glow--one {
+    top: -18rem;
+    right: -16rem;
+  }
+
+  .story-glow--two {
+    bottom: -20rem;
+    left: -16rem;
+  }
+
+  .story-header {
+    position: relative;
+    z-index: 2;
+    width: min(840px, 100%);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .story-header .eyebrow {
+    margin: 0 0 1rem;
+    color: #c9ad73;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.27em;
+    text-transform: uppercase;
+  }
+
+  .story-header h2 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(3rem, 7vw, 5.6rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .story-lead {
+    max-width: 690px;
+    margin: 1.35rem auto 0;
+    color: rgba(244, 240, 232, 0.78);
+    font-family: var(--serif);
+    font-size: clamp(1.05rem, 1.8vw, 1.28rem);
+    line-height: 1.7;
+    text-wrap: pretty;
+  }
+
+  .story-copy {
+    margin: 0.8rem auto 0;
+    color: rgba(244, 240, 232, 0.58);
+    font-family: var(--serif);
+    font-size: 0.98rem;
+  }
+
+  .story-ornament {
+    width: min(240px, 60vw);
+    margin: 1.8rem auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    color: #c9ad73;
+  }
+
+  .story-ornament i {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor);
+  }
+
+  .story-ornament i:last-child {
+    background: linear-gradient(90deg, currentColor, transparent);
+  }
+
+  .story-ornament span {
+    font-size: 0.7rem;
+  }
+
+  .story-cinema {
+    position: relative;
+    z-index: 2;
+    width: min(980px, 100%);
+    margin: clamp(2.5rem, 5vw, 4.5rem) auto 0;
+    padding: clamp(0.8rem, 2vw, 1.35rem);
+    border: 1px solid rgba(201, 173, 115, 0.35);
+    background: #111510;
+    box-shadow: 0 34px 95px rgba(0,0,0,0.32);
+  }
+
+  .film-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.15rem 0.25rem 0.75rem;
+    color: rgba(239, 231, 215, 0.68);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .film-progress {
+    height: 2px;
+    overflow: hidden;
+    background: rgba(201, 173, 115, 0.16);
+  }
+
+  .film-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: #c9ad73;
+    transition: width 360ms ease;
+  }
+
+  .story-stage {
+    position: relative;
+    width: min(760px, 100%);
+    aspect-ratio: 4 / 5;
+    margin: 1rem auto;
+    overflow: hidden;
+    background: #2a1c18;
+    touch-action: pan-y;
+  }
+
+  .story-stage::before,
+  .story-stage::after {
+    content: '';
+    position: absolute;
+    z-index: 5;
+    top: 0;
+    bottom: 0;
+    width: 16px;
+    pointer-events: none;
+    opacity: 0.42;
+    background:
+      radial-gradient(circle, #d7bd85 2px, transparent 2.5px) center top / 10px 18px repeat-y;
+  }
+
+  .story-stage::before { left: 2px; }
+  .story-stage::after { right: 2px; }
+
+  .story-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateX(24px) scale(0.99);
+    pointer-events: none;
+    transition: opacity 420ms ease, transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  }
+
+  .story-slide.is-active {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .story-page-meta {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    bottom: 0.9rem;
+    width: min(calc(100% - 5rem), 620px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.68rem 0.85rem;
+    border: 1px solid rgba(255, 244, 221, 0.28);
+    background: rgba(30, 20, 17, 0.76);
+    color: #fff7e9;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transform: translateX(-50%);
+  }
+
+  .story-page-meta span {
+    flex: 0 0 auto;
+    color: #d2b478;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .story-page-meta strong {
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--serif);
+    font-size: 0.82rem;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .story-page-link,
+  .story-page-link picture,
+  .story-page-link img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .story-page-link img {
+    object-fit: contain;
+    background: #2a1c18;
+  }
+
+  .story-controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.35rem;
+  }
+
+  .story-nav,
+  .story-open {
+    min-height: 46px;
+    border: 1px solid rgba(201, 173, 115, 0.34);
+    border-radius: 999px;
+    background: transparent;
+    color: #efe7d7;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-decoration: none;
+    transition: background 220ms ease, transform 220ms ease, opacity 220ms ease;
+  }
+
+  .story-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+  }
+
+  .story-nav:first-child {
+    justify-self: start;
+  }
+
+  .story-nav:last-child {
+    justify-self: end;
+  }
+
+  .story-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.75rem 1rem;
+    color: #d7bd85;
+  }
+
+  .story-nav:hover:not(:disabled),
+  .story-open:hover {
+    transform: translateY(-1px);
+    background: rgba(201, 173, 115, 0.09);
+  }
+
+  .story-nav:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .story-dots {
+    display: flex;
+    gap: 0.45rem;
+    margin-top: 1.1rem;
+    padding: 0.25rem 0 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201,173,115,0.45) transparent;
+  }
+
+  .story-dot {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(201, 173, 115, 0.24);
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(239, 231, 215, 0.56);
+    font-size: 0.6rem;
+    cursor: pointer;
+    transition: border-color 220ms ease, color 220ms ease, background 220ms ease, transform 220ms ease;
+  }
+
+  .story-dot:hover,
+  .story-dot.is-active {
+    border-color: #c9ad73;
+    background: rgba(201, 173, 115, 0.12);
+    color: #f4e9d1;
+  }
+
+  .story-dot.is-active {
+    transform: scale(1.08);
+  }
+
+  .story-hint {
+    margin: 0.8rem 0 0;
+    color: rgba(239, 231, 215, 0.42);
+    font-family: var(--serif);
+    font-size: 0.82rem;
+    font-style: italic;
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .story-comic {
+      padding-inline: 0.55rem;
+    }
+
+    .story-comic::before {
+      inset: 0.45rem;
+    }
+
+    .story-header {
+      width: min(100% - 1rem, 700px);
+    }
+
+    .story-cinema {
+      padding: 0.65rem;
+    }
+
+    .film-topbar {
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+    }
+
+    .story-stage::before,
+    .story-stage::after {
+      display: none;
+    }
+
+    .story-page-meta {
+      bottom: 0.55rem;
+      width: calc(100% - 1rem);
+      padding: 0.55rem 0.65rem;
+    }
+
+    .story-page-meta strong {
+      font-size: 0.72rem;
+    }
+
+    .story-controls {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .story-open {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .story-nav {
+      width: 100%;
+      justify-content: center !important;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .story-header h2 {
+      font-size: clamp(2.7rem, 15vw, 4rem);
+    }
+
+    .story-page-meta {
+      align-items: flex-start;
+    }
+
+    .story-page-meta strong {
+      white-space: normal;
+      text-align: right;
+      line-height: 1.2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .story-slide,
+    .story-nav,
+    .story-open,
+    .story-dot,
+    .film-progress span {
+      transition: none;
+    }
+  }
+</style>
