@@ -44,8 +44,8 @@ export const weddingConfig = {
       url: 'https://www.amazon.com.mx/wedding/guest-view/14A2SBR3GEMS'
     } satisfies LinkConfig,
     liverpool: {
-      label: 'Ver mesa de regalos en Liverpool',
-      url: 'https://mesaderegalos.liverpool.com.mx/gestiondeeventos/listaderegalos/60026024'
+      label: 'Liverpool',
+      url: null
     } satisfies LinkConfig
   }
 } as const;

@@ -29,13 +29,13 @@ import { weddingConfig } from '../lib/wedding-config';
     <ChapterMemories client:visible />
     <ChapterTransition />
     <Iglesia />
-    <Countdown eventDate={weddingConfig.religious.dateIso} dateLabel={weddingConfig.religious.dateLabel} client:visible />
     <Comida />
     <NuestraHistoria {...weddingConfig.storyVideo} />
     <GuestDetails />
     <Ninos />
     <Gifts amazon={weddingConfig.gifts.amazon} liverpool={weddingConfig.gifts.liverpool} />
     <Rsvp confirmationWhatsApp={weddingConfig.religious.confirmationWhatsApp} client:load />
+    <Countdown eventDate={weddingConfig.religious.dateIso} dateLabel={weddingConfig.religious.dateLabel} client:visible />
     <Closing />
   </main>
 </Layout>
