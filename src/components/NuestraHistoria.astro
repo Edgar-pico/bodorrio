@@ -54,6 +54,11 @@ const storyPages = [
       <span data-story-progress></span>
     </div>
 
+    <div class="story-current-meta" aria-live="polite">
+      <span data-story-chapter>{storyPages[0].chapter}</span>
+      <strong data-story-title>{storyPages[0].title}</strong>
+    </div>
+
     <div
       class="story-stage"
       data-story-stage
@@ -72,12 +77,9 @@ const storyPages = [
             aria-hidden={index === 0 ? 'false' : 'true'}
             data-story-slide
             data-full={jpg}
+            data-chapter={item.chapter}
+            data-title={item.title}
           >
-            <div class="story-page-meta">
-              <span>{item.chapter}</span>
-              <strong>{item.title}</strong>
-            </div>
-
             <a
               class="story-page-link"
               href={jpg}
@@ -157,6 +159,8 @@ const storyPages = [
     const openLink = root.querySelector<HTMLAnchorElement>('[data-story-open]');
     const stage = root.querySelector<HTMLElement>('[data-story-stage]');
     const dotsScroller = root.querySelector<HTMLElement>('[data-story-dots]');
+    const currentChapter = root.querySelector<HTMLElement>('[data-story-chapter]');
+    const currentTitle = root.querySelector<HTMLElement>('[data-story-title]');
 
     if (
       !slides.length ||
@@ -166,7 +170,9 @@ const storyPages = [
       !progress ||
       !openLink ||
       !stage ||
-      !dotsScroller
+      !dotsScroller ||
+      !currentChapter ||
+      !currentTitle
     ) return;
 
     let activeIndex = 0;
@@ -207,8 +213,12 @@ const storyPages = [
       counter.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
       progress.style.width = `${((activeIndex + 1) / slides.length) * 100}%`;
 
-      const full = slides[activeIndex]?.dataset.full;
+      const activeSlide = slides[activeIndex];
+      const full = activeSlide?.dataset.full;
       if (full) openLink.href = full;
+
+      currentChapter.textContent = activeSlide?.dataset.chapter ?? '';
+      currentTitle.textContent = activeSlide?.dataset.title ?? '';
 
       if (centerDot) centerActiveDot();
     };
@@ -687,28 +697,23 @@ const storyPages = [
     45%, 65% { opacity: 1; }
   }
 
-  .story-page-meta {
-    position: absolute;
-    z-index: 6;
-    left: 50%;
-    bottom: 0.9rem;
-    width: min(calc(100% - 5rem), 620px);
-    max-width: calc(100% - 1rem);
+  .story-current-meta {
+    width: min(760px, 100%);
+    max-width: 100%;
     min-width: 0;
+    margin: 0.95rem auto 0;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.68rem 0.85rem;
-    border: 1px solid rgba(255, 244, 221, 0.28);
-    background: rgba(30, 20, 17, 0.76);
+    padding: 0.72rem 0.9rem;
+    border: 1px solid rgba(201, 173, 115, 0.2);
+    border-bottom-color: rgba(201, 173, 115, 0.42);
+    background: rgba(24, 29, 23, 0.72);
     color: #fff7e9;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transform: translateX(-50%);
   }
 
-  .story-page-meta span {
+  .story-current-meta span {
     flex: 0 0 auto;
     color: #d2b478;
     font-size: 0.58rem;
@@ -717,14 +722,15 @@ const storyPages = [
     text-transform: uppercase;
   }
 
-  .story-page-meta strong {
+  .story-current-meta strong {
     min-width: 0;
-    overflow: hidden;
+    color: rgba(255, 247, 233, 0.9);
     font-family: var(--serif);
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-weight: 400;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.25;
+    text-align: right;
+    text-wrap: balance;
   }
 
   .story-page-link,
@@ -892,14 +898,14 @@ const storyPages = [
       display: none;
     }
 
-    .story-page-meta {
-      bottom: 0.55rem;
-      width: calc(100% - 1rem);
-      padding: 0.55rem 0.65rem;
+    .story-current-meta {
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.62rem 0.7rem;
     }
 
-    .story-page-meta strong {
-      font-size: 0.72rem;
+    .story-current-meta strong {
+      font-size: 0.76rem;
     }
 
     .story-controls {
@@ -927,17 +933,17 @@ const storyPages = [
       gap: 0.55rem;
     }
 
-    .story-page-meta {
+    .story-current-meta {
       align-items: flex-start;
+      gap: 0.7rem;
     }
 
-    .story-page-meta span {
-      font-size: 0.52rem;
+    .story-current-meta span {
+      font-size: 0.5rem;
     }
 
-    .story-page-meta strong {
-      white-space: normal;
-      text-align: right;
+    .story-current-meta strong {
+      font-size: 0.72rem;
       line-height: 1.2;
     }
 

@@ -73,6 +73,8 @@
 
   .reception-background {
     z-index: -3;
+    pointer-events: none;
+    user-select: none;
   }
 
   .reception-background,
@@ -220,9 +222,12 @@
     color: #7b6b58;
   }
 
+  /* Tablet y móvil: reservamos una zona superior exclusiva para el título
+     "Recepción" que ya viene integrado dentro de la imagen de fondo. */
   @media (max-width: 900px) {
     .reception-section {
-      min-height: 920px;
+      min-height: max(980px, 100svh);
+      place-items: start center;
     }
 
     .reception-background img {
@@ -230,23 +235,50 @@
     }
 
     .reception-overlay {
-      background: rgba(250, 246, 238, 0.28);
+      background: linear-gradient(
+        180deg,
+        rgba(250, 246, 238, 0.08) 0%,
+        rgba(250, 246, 238, 0.15) 23%,
+        rgba(250, 246, 238, 0.32) 42%,
+        rgba(250, 246, 238, 0.52) 100%
+      );
     }
 
     .reception-content {
+      width: min(100% - 1.5rem, 680px);
+      min-height: 0;
       display: block;
-      padding: 9.5rem 0.35rem 3rem;
+      padding: clamp(17rem, 35vw, 20rem) 0.35rem 4rem;
     }
 
     .reception-copy {
-      width: min(620px, 100%);
+      width: 100%;
       margin-inline: auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.8rem;
+      padding: 0.42rem 0.72rem;
+      border: 1px solid rgba(164, 126, 59, 0.2);
+      border-radius: 999px;
+      background: rgba(255, 252, 246, 0.72);
+      box-shadow: 0 8px 25px rgba(91, 70, 42, 0.06);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .reception-intro {
+      max-width: 580px;
+      margin-bottom: 1.6rem;
     }
   }
 
   @media (max-width: 600px) {
     .reception-section {
-      min-height: 860px;
+      min-height: max(1040px, 100svh);
     }
 
     .reception-background img {
@@ -254,24 +286,58 @@
     }
 
     .reception-overlay {
-      background: linear-gradient(180deg, rgba(250, 246, 238, 0.22), rgba(250, 246, 238, 0.5));
+      background: linear-gradient(
+        180deg,
+        rgba(250, 246, 238, 0.04) 0%,
+        rgba(250, 246, 238, 0.1) 22%,
+        rgba(250, 246, 238, 0.32) 40%,
+        rgba(250, 246, 238, 0.62) 100%
+      );
     }
 
     .reception-content {
       width: min(100% - 1rem, 520px);
-      padding-top: 8.4rem;
+      padding: clamp(18.5rem, 79vw, 21rem) 0.15rem 3.5rem;
     }
 
     h2 {
-      font-size: clamp(2.7rem, 13vw, 4rem);
+      font-size: clamp(2.75rem, 13vw, 4rem);
+      line-height: 0.98;
     }
 
     .reception-intro {
       padding-inline: 0.4rem;
+      font-size: clamp(1rem, 4.5vw, 1.14rem);
+      line-height: 1.65;
     }
 
     .reception-card {
-      background: rgba(255, 252, 246, 0.82);
+      padding: 1.7rem 1.15rem 1.9rem;
+      background: rgba(255, 252, 246, 0.88);
+      box-shadow: 0 20px 55px rgba(91, 70, 42, 0.1);
+    }
+
+    .reception-card h3 {
+      font-size: clamp(1.7rem, 8vw, 2.15rem);
+    }
+
+    address {
+      font-size: clamp(0.95rem, 4.2vw, 1.05rem);
+    }
+
+    .reception-button {
+      width: min(280px, 100%);
+    }
+  }
+
+  @media (max-width: 390px) {
+    .reception-content {
+      padding-top: 17.5rem;
+    }
+
+    .eyebrow {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
     }
   }
 
