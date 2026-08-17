@@ -47,14 +47,20 @@ const storyPages = [
   <div class="story-cinema" aria-label="Historieta de Brenda y Edgar">
     <div class="film-topbar">
       <span>Nuestra historia · Brenda &amp; Edgar</span>
-      <span data-story-counter>01 / {String(storyPages.length).padStart(2, '0')}</span>
+      <span data-story-counter aria-live="polite">01 / {String(storyPages.length).padStart(2, '0')}</span>
     </div>
 
     <div class="film-progress" aria-hidden="true">
       <span data-story-progress></span>
     </div>
 
-    <div class="story-stage" data-story-stage>
+    <div
+      class="story-stage"
+      data-story-stage
+      tabindex="0"
+      role="group"
+      aria-label="Páginas de nuestra historia. Usa las flechas izquierda y derecha para cambiar de capítulo."
+    >
       {storyPages.map((item, index) => {
         const number = String(item.page).padStart(2, '0');
         const jpg = `/nuestra-historia/pagina-${number}.jpg`;
@@ -72,7 +78,15 @@ const storyPages = [
               <strong>{item.title}</strong>
             </div>
 
-            <a class="story-page-link" href={jpg} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${item.title} en tamaño completo`}>
+            <a
+              class="story-page-link"
+              href={jpg}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Abrir ${item.title} en tamaño completo`}
+              tabindex={index === 0 ? 0 : -1}
+              data-story-page-link
+            >
               <picture>
                 <source srcset={webp} type="image/webp" />
                 <img
@@ -80,7 +94,7 @@ const storyPages = [
                   alt={`${item.chapter}: ${item.title}`}
                   width="1600"
                   height="2000"
-                  loading="lazy"
+                  loading={index < 2 ? 'eager' : 'lazy'}
                   decoding="async"
                 />
               </picture>
@@ -112,7 +126,7 @@ const storyPages = [
       </button>
     </div>
 
-    <div class="story-dots" aria-label="Ir a un capítulo">
+    <div class="story-dots" aria-label="Ir a un capítulo" data-story-dots>
       {storyPages.map((item, index) => (
         <button
           type="button"
@@ -127,13 +141,14 @@ const storyPages = [
       ))}
     </div>
 
-    <p class="story-hint">Usa las flechas para avanzar. También puedes tocar la página para abrirla completa.</p>
+    <p class="story-hint">Desliza o usa las flechas para pasar cada hoja. También puedes abrir la página completa.</p>
   </div>
 </section>
 
 <script>
   document.querySelectorAll<HTMLElement>('[data-story-root]').forEach((root) => {
     const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-story-slide]'));
+    const pageLinks = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-story-page-link]'));
     const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-story-dot]'));
     const prev = root.querySelector<HTMLButtonElement>('[data-story-prev]');
     const next = root.querySelector<HTMLButtonElement>('[data-story-next]');
@@ -141,24 +156,50 @@ const storyPages = [
     const progress = root.querySelector<HTMLElement>('[data-story-progress]');
     const openLink = root.querySelector<HTMLAnchorElement>('[data-story-open]');
     const stage = root.querySelector<HTMLElement>('[data-story-stage]');
+    const dotsScroller = root.querySelector<HTMLElement>('[data-story-dots]');
 
-    if (!slides.length || !prev || !next || !counter || !progress || !openLink || !stage) return;
+    if (
+      !slides.length ||
+      !prev ||
+      !next ||
+      !counter ||
+      !progress ||
+      !openLink ||
+      !stage ||
+      !dotsScroller
+    ) return;
 
     let activeIndex = 0;
     let startX = 0;
+    let startY = 0;
+    let isAnimating = false;
 
-    const render = (scrollActiveDot = false) => {
-      slides.forEach((slide, index) => {
-        const active = index === activeIndex;
-        slide.classList.toggle('is-active', active);
-        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
-      });
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const centerActiveDot = (behavior: ScrollBehavior = 'smooth') => {
+      const activeDot = dots[activeIndex];
+      if (!activeDot) return;
+
+      const desiredLeft =
+        activeDot.offsetLeft - (dotsScroller.clientWidth - activeDot.offsetWidth) / 2;
+      const maxLeft = Math.max(0, dotsScroller.scrollWidth - dotsScroller.clientWidth);
+      const left = Math.max(0, Math.min(desiredLeft, maxLeft));
+
+      // Importante: desplazamos SOLO la tira de capítulos.
+      // No usamos scrollIntoView(), porque puede desplazar también el viewport.
+      dotsScroller.scrollTo({ left, top: 0, behavior });
+    };
+
+    const renderChrome = (centerDot = false) => {
       dots.forEach((dot, index) => {
         const active = index === activeIndex;
         dot.classList.toggle('is-active', active);
         if (active) dot.setAttribute('aria-current', 'page');
         else dot.removeAttribute('aria-current');
+      });
+
+      pageLinks.forEach((link, index) => {
+        link.tabIndex = index === activeIndex ? 0 : -1;
       });
 
       prev.disabled = activeIndex === 0;
@@ -169,15 +210,75 @@ const storyPages = [
       const full = slides[activeIndex]?.dataset.full;
       if (full) openLink.href = full;
 
-      const activeDot = dots[activeIndex];
-      if (scrollActiveDot && activeDot) {
-        activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
+      if (centerDot) centerActiveDot();
     };
 
-    const goTo = (index: number) => {
-      activeIndex = Math.max(0, Math.min(index, slides.length - 1));
-      render(true);
+    const showImmediately = (targetIndex: number, centerDot = false) => {
+      activeIndex = Math.max(0, Math.min(targetIndex, slides.length - 1));
+
+      slides.forEach((slide, index) => {
+        const active = index === activeIndex;
+        slide.classList.toggle('is-active', active);
+        slide.classList.remove(
+          'is-turning-out-next',
+          'is-turning-in-next',
+          'is-turning-out-prev',
+          'is-turning-in-prev'
+        );
+        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+
+      renderChrome(centerDot);
+    };
+
+    const goTo = (requestedIndex: number) => {
+      const targetIndex = Math.max(0, Math.min(requestedIndex, slides.length - 1));
+      if (targetIndex === activeIndex || isAnimating) return;
+
+      const fromIndex = activeIndex;
+      const currentSlide = slides[fromIndex];
+      const targetSlide = slides[targetIndex];
+      if (!currentSlide || !targetSlide) return;
+
+      const direction = targetIndex > fromIndex ? 'next' : 'prev';
+      activeIndex = targetIndex;
+
+      if (reduceMotion) {
+        currentSlide.classList.remove('is-active');
+        currentSlide.setAttribute('aria-hidden', 'true');
+        targetSlide.classList.add('is-active');
+        targetSlide.setAttribute('aria-hidden', 'false');
+        renderChrome(true);
+        return;
+      }
+
+      isAnimating = true;
+
+      const outClass = direction === 'next' ? 'is-turning-out-next' : 'is-turning-out-prev';
+      const inClass = direction === 'next' ? 'is-turning-in-next' : 'is-turning-in-prev';
+
+      currentSlide.classList.add('is-active', outClass);
+      targetSlide.classList.add('is-active', inClass);
+      currentSlide.setAttribute('aria-hidden', 'false');
+      targetSlide.setAttribute('aria-hidden', 'false');
+
+      renderChrome(true);
+
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+
+        currentSlide.classList.remove('is-active', outClass);
+        currentSlide.setAttribute('aria-hidden', 'true');
+        targetSlide.classList.remove(inClass);
+        targetSlide.classList.add('is-active');
+        targetSlide.setAttribute('aria-hidden', 'false');
+        isAnimating = false;
+      };
+
+      targetSlide.addEventListener('animationend', finish, { once: true });
+      window.setTimeout(finish, 760);
     };
 
     prev.addEventListener('click', () => goTo(activeIndex - 1));
@@ -190,7 +291,7 @@ const storyPages = [
       });
     });
 
-    root.addEventListener('keydown', (event: KeyboardEvent) => {
+    stage.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         goTo(activeIndex - 1);
@@ -204,24 +305,39 @@ const storyPages = [
 
     stage.addEventListener('pointerdown', (event: PointerEvent) => {
       startX = event.clientX;
+      startY = event.clientY;
     });
 
     stage.addEventListener('pointerup', (event: PointerEvent) => {
-      const delta = event.clientX - startX;
-      if (Math.abs(delta) < 55) return;
+      const deltaX = event.clientX - startX;
+      const deltaY = event.clientY - startY;
 
-      if (delta < 0) goTo(activeIndex + 1);
+      // Si el gesto fue principalmente vertical, dejamos que la página haga scroll normal.
+      if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+      if (Math.abs(deltaX) < 48) return;
+
+      if (deltaX < 0) goTo(activeIndex + 1);
       else goTo(activeIndex - 1);
     });
 
-    render(false);
+    stage.addEventListener('pointercancel', () => {
+      startX = 0;
+      startY = 0;
+    });
+
+    showImmediately(0, false);
   });
 </script>
 
 <style>
   .story-comic {
     position: relative;
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
     overflow: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: contain;
     padding: clamp(5.5rem, 9vw, 8.5rem) clamp(0.8rem, 3vw, 2.5rem);
     border-block: 1px solid rgba(185, 151, 88, 0.25);
     background:
@@ -264,6 +380,7 @@ const storyPages = [
     position: relative;
     z-index: 2;
     width: min(840px, 100%);
+    min-width: 0;
     margin-inline: auto;
     text-align: center;
   }
@@ -332,14 +449,18 @@ const storyPages = [
     position: relative;
     z-index: 2;
     width: min(980px, 100%);
+    max-width: 100%;
+    min-width: 0;
     margin: clamp(2.5rem, 5vw, 4.5rem) auto 0;
     padding: clamp(0.8rem, 2vw, 1.35rem);
+    overflow: hidden;
     border: 1px solid rgba(201, 173, 115, 0.35);
     background: #111510;
-    box-shadow: 0 34px 95px rgba(0,0,0,0.32);
+    box-shadow: 0 34px 95px rgba(0, 0, 0, 0.32);
   }
 
   .film-topbar {
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -350,6 +471,17 @@ const storyPages = [
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
+  }
+
+  .film-topbar > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .film-topbar > span:last-child {
+    flex: 0 0 auto;
   }
 
   .film-progress {
@@ -369,18 +501,29 @@ const storyPages = [
   .story-stage {
     position: relative;
     width: min(760px, 100%);
+    max-width: 100%;
+    min-width: 0;
     aspect-ratio: 4 / 5;
     margin: 1rem auto;
     overflow: hidden;
+    isolation: isolate;
+    contain: layout paint;
     background: #2a1c18;
     touch-action: pan-y;
+    perspective: 1600px;
+    perspective-origin: 50% 50%;
+    outline: none;
+  }
+
+  .story-stage:focus-visible {
+    box-shadow: 0 0 0 2px rgba(201, 173, 115, 0.72);
   }
 
   .story-stage::before,
   .story-stage::after {
     content: '';
     position: absolute;
-    z-index: 5;
+    z-index: 8;
     top: 0;
     bottom: 0;
     width: 16px;
@@ -396,24 +539,162 @@ const storyPages = [
   .story-slide {
     position: absolute;
     inset: 0;
+    z-index: 1;
+    visibility: hidden;
     opacity: 0;
-    transform: translateX(24px) scale(0.99);
     pointer-events: none;
-    transition: opacity 420ms ease, transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1);
+    transform: rotateY(0deg) translateZ(0);
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  .story-slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+    opacity: 0;
   }
 
   .story-slide.is-active {
+    z-index: 2;
+    visibility: visible;
     opacity: 1;
-    transform: translateX(0) scale(1);
     pointer-events: auto;
+  }
+
+  /* Efecto de hoja: siguiente capítulo */
+  .story-slide.is-turning-out-next {
+    z-index: 5;
+    visibility: visible;
+    transform-origin: left center;
+    pointer-events: none;
+    animation: story-page-out-next 680ms cubic-bezier(0.42, 0, 0.18, 1) both;
+  }
+
+  .story-slide.is-turning-in-next {
+    z-index: 4;
+    visibility: visible;
+    transform-origin: right center;
+    pointer-events: none;
+    animation: story-page-in-next 680ms cubic-bezier(0.42, 0, 0.18, 1) both;
+  }
+
+  .story-slide.is-turning-out-next::after {
+    background: linear-gradient(90deg, transparent 45%, rgba(10, 7, 5, 0.58) 100%);
+    animation: story-page-shadow 680ms ease both;
+  }
+
+  /* Efecto de hoja: capítulo anterior */
+  .story-slide.is-turning-out-prev {
+    z-index: 5;
+    visibility: visible;
+    transform-origin: right center;
+    pointer-events: none;
+    animation: story-page-out-prev 680ms cubic-bezier(0.42, 0, 0.18, 1) both;
+  }
+
+  .story-slide.is-turning-in-prev {
+    z-index: 4;
+    visibility: visible;
+    transform-origin: left center;
+    pointer-events: none;
+    animation: story-page-in-prev 680ms cubic-bezier(0.42, 0, 0.18, 1) both;
+  }
+
+  .story-slide.is-turning-out-prev::after {
+    background: linear-gradient(270deg, transparent 45%, rgba(10, 7, 5, 0.58) 100%);
+    animation: story-page-shadow 680ms ease both;
+  }
+
+  @keyframes story-page-out-next {
+    0% {
+      opacity: 1;
+      transform: rotateY(0deg) translateZ(0);
+      filter: brightness(1);
+    }
+    48% {
+      opacity: 1;
+      transform: rotateY(-48deg) translateZ(16px);
+      filter: brightness(0.86);
+    }
+    100% {
+      opacity: 0;
+      transform: rotateY(-92deg) translateZ(0);
+      filter: brightness(0.72);
+    }
+  }
+
+  @keyframes story-page-in-next {
+    0% {
+      opacity: 0.2;
+      transform: rotateY(72deg) translateZ(0);
+      filter: brightness(0.72);
+    }
+    52% {
+      opacity: 0.8;
+      transform: rotateY(22deg) translateZ(12px);
+      filter: brightness(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: rotateY(0deg) translateZ(0);
+      filter: brightness(1);
+    }
+  }
+
+  @keyframes story-page-out-prev {
+    0% {
+      opacity: 1;
+      transform: rotateY(0deg) translateZ(0);
+      filter: brightness(1);
+    }
+    48% {
+      opacity: 1;
+      transform: rotateY(48deg) translateZ(16px);
+      filter: brightness(0.86);
+    }
+    100% {
+      opacity: 0;
+      transform: rotateY(92deg) translateZ(0);
+      filter: brightness(0.72);
+    }
+  }
+
+  @keyframes story-page-in-prev {
+    0% {
+      opacity: 0.2;
+      transform: rotateY(-72deg) translateZ(0);
+      filter: brightness(0.72);
+    }
+    52% {
+      opacity: 0.8;
+      transform: rotateY(-22deg) translateZ(12px);
+      filter: brightness(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: rotateY(0deg) translateZ(0);
+      filter: brightness(1);
+    }
+  }
+
+  @keyframes story-page-shadow {
+    0%, 100% { opacity: 0; }
+    45%, 65% { opacity: 1; }
   }
 
   .story-page-meta {
     position: absolute;
-    z-index: 4;
+    z-index: 6;
     left: 50%;
     bottom: 0.9rem;
     width: min(calc(100% - 5rem), 620px);
+    max-width: calc(100% - 1rem);
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -454,14 +735,24 @@ const storyPages = [
     height: 100%;
   }
 
+  .story-page-link {
+    position: relative;
+    overflow: hidden;
+  }
+
   .story-page-link img {
     object-fit: contain;
     background: #2a1c18;
+    user-select: none;
+    -webkit-user-drag: none;
   }
 
   .story-controls {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.8rem;
     margin-top: 0.35rem;
@@ -469,6 +760,8 @@ const storyPages = [
 
   .story-nav,
   .story-open {
+    min-width: 0;
+    max-width: 100%;
     min-height: 46px;
     border: 1px solid rgba(201, 173, 115, 0.34);
     border-radius: 999px;
@@ -519,13 +812,20 @@ const storyPages = [
   }
 
   .story-dots {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     display: flex;
     gap: 0.45rem;
     margin-top: 1.1rem;
-    padding: 0.25rem 0 0.5rem;
+    padding: 0.25rem 0.1rem 0.5rem;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
     scrollbar-width: thin;
-    scrollbar-color: rgba(201,173,115,0.45) transparent;
+    scrollbar-color: rgba(201, 173, 115, 0.45) transparent;
   }
 
   .story-dot {
@@ -534,6 +834,7 @@ const storyPages = [
     height: 34px;
     display: grid;
     place-items: center;
+    scroll-snap-align: center;
     border: 1px solid rgba(201, 173, 115, 0.24);
     border-radius: 50%;
     background: transparent;
@@ -573,10 +874,11 @@ const storyPages = [
     }
 
     .story-header {
-      width: min(100% - 1rem, 700px);
+      width: min(calc(100% - 1rem), 700px);
     }
 
     .story-cinema {
+      width: 100%;
       padding: 0.65rem;
     }
 
@@ -601,10 +903,11 @@ const storyPages = [
     }
 
     .story-controls {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .story-open {
+      width: 100%;
       grid-column: 1 / -1;
       grid-row: 2;
     }
@@ -620,8 +923,16 @@ const storyPages = [
       font-size: clamp(2.7rem, 15vw, 4rem);
     }
 
+    .film-topbar {
+      gap: 0.55rem;
+    }
+
     .story-page-meta {
       align-items: flex-start;
+    }
+
+    .story-page-meta span {
+      font-size: 0.52rem;
     }
 
     .story-page-meta strong {
@@ -629,15 +940,29 @@ const storyPages = [
       text-align: right;
       line-height: 1.2;
     }
+
+    .story-nav,
+    .story-open {
+      font-size: 0.68rem;
+      padding-inline: 0.75rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .story-slide,
     .story-nav,
     .story-open,
     .story-dot,
     .film-progress span {
       transition: none;
+    }
+
+    .story-slide.is-turning-out-next,
+    .story-slide.is-turning-in-next,
+    .story-slide.is-turning-out-prev,
+    .story-slide.is-turning-in-prev,
+    .story-slide.is-turning-out-next::after,
+    .story-slide.is-turning-out-prev::after {
+      animation: none;
     }
   }
 </style>
