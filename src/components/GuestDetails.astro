@@ -1,29 +1,457 @@
 ---
 import { weddingConfig } from '../lib/wedding-config';
+
 const details = weddingConfig.religious;
 ---
 
-<section id="invitados" class="story-section guest-details reveal-section" aria-labelledby="guest-title">
-  <div class="section-shell section-shell--narrow">
-    <p class="eyebrow">Para acompañarnos</p>
-    <h2 id="guest-title">Detalles para nuestros invitados</h2>
+<section id="invitados" class="guest-details reveal-section" aria-labelledby="guest-title">
+  <div class="guest-shell">
+    <header class="guest-header">
+      <span class="guest-kicker">Para acompañarnos</span>
 
-    <div class="details-grid">
-      <article class="detail-card">
-        <span aria-hidden="true">◇</span>
-        <h3>Código de vestimenta</h3>
-        <p><strong>{details.dressCode}</strong></p>
-        <ul>{details.dressCodeNotes.map((item) => <li>{item}</li>)}</ul>
+      <div class="guest-ornament" aria-hidden="true">
+        <i></i>
+        <svg viewBox="0 0 24 24" role="presentation">
+          <path d="M12 20.3 3.9 12.7A5.2 5.2 0 0 1 11.2 5l.8.9.8-.9a5.2 5.2 0 0 1 7.3 7.7L12 20.3Z" />
+        </svg>
+        <i></i>
+      </div>
+
+      <h2 id="guest-title">Detalles para nuestros invitados</h2>
+
+      <p class="guest-intro">
+        Estamos muy felices de compartir con ustedes uno de los días más importantes de nuestra historia.
+        Cada detalle fue preparado con muchísimo amor para que lo disfruten tanto como nosotros.
+      </p>
+    </header>
+
+    <div class="guest-grid">
+      <article class="guest-card guest-card--dress">
+        <div class="guest-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="presentation">
+            <path d="M9.1 3.5h5.8l1.2 4.1 3.1 2.3-2.1 3.3-2-1.1V21H8.9v-8.9l-2 1.1-2.1-3.3 3.1-2.3 1.2-4.1Z" />
+            <path d="M10 3.5c.2 1.2.8 2 2 2s1.8-.8 2-2" />
+          </svg>
+        </div>
+
+        <p class="guest-card__eyebrow">Código de vestimenta</p>
+        <h3>Formal elegante</h3>
+
+        <p class="guest-card__copy">
+          Queremos verlos guapísimos y celebrar juntos con un look especial para la ocasión.
+        </p>
+
+        <div class="dress-rules">
+          <div class="dress-rule">
+            <span class="dress-rule__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path d="m12 3 2.2 4.7 5.1.7-3.7 3.6.9 5.1-4.5-2.4-4.5 2.4.9-5.1-3.7-3.6 5.1-.7L12 3Z" />
+              </svg>
+            </span>
+            <span>
+              <strong>Damas</strong>
+              Evitar blanco.
+            </span>
+          </div>
+
+          <div class="dress-rule">
+            <span class="dress-rule__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M8 3h8l1 4 3 2-2 4-2-1v9H8v-9l-2 1-2-4 3-2 1-4Z" />
+                <path d="M10 3c.2 1.4.8 2.2 2 2.2S13.8 4.4 14 3" />
+              </svg>
+            </span>
+            <span>
+              <strong>Caballeros</strong>
+              Evitar negro.
+            </span>
+          </div>
+        </div>
       </article>
-      <article class="detail-card">
-        <span aria-hidden="true">✦</span>
-        <h3>Recomendaciones</h3>
+
+      <article class="guest-card guest-card--celebrate">
+        <div class="guest-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="presentation">
+            <path d="M12 3v4M5.6 5.6l2.8 2.8M18.4 5.6l-2.8 2.8M4 12h4M16 12h4" />
+            <path d="M9 13.5 4.5 21l7.5-4.5L19.5 21 15 13.5" />
+          </svg>
+        </div>
+
+        <p class="guest-card__eyebrow">Disfruten con nosotros</p>
+        <h3>Este día también es para ustedes</h3>
+
+        <p class="guest-card__copy guest-card__copy--large">
+          Vengan guapísimos, coman, bailen, rían y celebren con nosotros. 🤍
+        </p>
+
+        <div class="celebrate-tags" aria-label="Disfruta la celebración">
+          <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h10l-1 7a4 4 0 0 1-8 0L7 3Z" />
+              <path d="M12 14v5M9 21h6" />
+            </svg>
+            Brinden
+          </span>
+
+          <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 5h14v14H5z" />
+              <path d="m8 12 2.5 2.5L16 9" />
+            </svg>
+            Disfruten
+          </span>
+
+          <span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4v16M16 4v16M4 8h16M4 16h16" />
+            </svg>
+            Bailen
+          </span>
+        </div>
+
         {details.recommendations.length ? (
-          <ul>{details.recommendations.map((item) => <li>{item}</li>)}</ul>
-        ) : (
-          <p>Estamos preparando todos los detalles para recibirte.</p>
-        )}
+          <div class="guest-extra">
+            <span>Además</span>
+            <ul>
+              {details.recommendations.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+        ) : null}
       </article>
     </div>
   </div>
 </section>
+
+<style>
+  .guest-details {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: clamp(5rem, 8vw, 8rem) clamp(1rem, 4vw, 4rem);
+    background:
+      radial-gradient(circle at 14% 18%, rgba(192, 160, 101, 0.09), transparent 26rem),
+      radial-gradient(circle at 88% 78%, rgba(111, 125, 103, 0.08), transparent 22rem),
+      linear-gradient(145deg, #fbf7ef 0%, #f4ecdf 100%);
+    color: #4f463d;
+  }
+
+  .guest-details::before {
+    content: '';
+    position: absolute;
+    inset: clamp(0.75rem, 1.6vw, 1.4rem);
+    border: 1px solid rgba(179, 146, 84, 0.18);
+    pointer-events: none;
+  }
+
+  .guest-shell {
+    position: relative;
+    z-index: 2;
+    width: min(1220px, 100%);
+    margin-inline: auto;
+  }
+
+  .guest-header {
+    width: min(820px, 100%);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .guest-kicker {
+    color: #9c793d;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  .guest-ornament {
+    width: min(190px, 52vw);
+    margin: 1rem auto 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #bd9854;
+  }
+
+  .guest-ornament i {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor);
+  }
+
+  .guest-ornament i:last-child {
+    background: linear-gradient(90deg, currentColor, transparent);
+  }
+
+  .guest-ornament svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+
+  .guest-header h2 {
+    margin: 0;
+    color: #5f584d;
+    font-family: var(--serif, Georgia, 'Times New Roman', serif);
+    font-size: clamp(2.7rem, 5.2vw, 5rem);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  .guest-intro {
+    max-width: 720px;
+    margin: 1.35rem auto 0;
+    color: #756a5c;
+    font-family: var(--serif, Georgia, 'Times New Roman', serif);
+    font-size: clamp(1.02rem, 1.7vw, 1.22rem);
+    line-height: 1.75;
+    text-wrap: pretty;
+  }
+
+  .guest-grid {
+    margin-top: clamp(3rem, 6vw, 5rem);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .guest-card {
+    position: relative;
+    min-width: 0;
+    padding: clamp(2rem, 4vw, 3.25rem);
+    overflow: hidden;
+    border: 1px solid rgba(179, 146, 84, 0.26);
+    background: rgba(255, 252, 246, 0.88);
+    box-shadow: 0 22px 60px rgba(84, 65, 42, 0.08);
+    text-align: center;
+  }
+
+  .guest-card__icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 1rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(183, 149, 85, 0.35);
+    border-radius: 50%;
+    color: #a87e38;
+    background: rgba(255, 250, 241, 0.72);
+  }
+
+  .guest-card__icon svg,
+  .dress-rule__icon svg,
+  .celebrate-tags svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.45;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .guest-card__icon svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .guest-card__eyebrow {
+    margin: 0;
+    color: #9c793d;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .guest-card h3 {
+    max-width: 520px;
+    margin: 0.65rem auto 0;
+    color: #625345;
+    font-family: var(--serif, Georgia, 'Times New Roman', serif);
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    font-weight: 400;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
+  .guest-card__copy {
+    max-width: 520px;
+    margin: 1rem auto 0;
+    color: #786b5d;
+    font-family: var(--serif, Georgia, 'Times New Roman', serif);
+    font-size: 1rem;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .guest-card__copy--large {
+    font-size: clamp(1.05rem, 1.8vw, 1.24rem);
+    line-height: 1.7;
+  }
+
+  .dress-rules {
+    margin-top: 1.65rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+
+  .dress-rule {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.95rem;
+    border: 1px solid rgba(178, 145, 84, 0.22);
+    background: rgba(248, 244, 235, 0.76);
+    text-align: left;
+  }
+
+  .dress-rule__icon {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #a57d38;
+    background: rgba(190, 158, 99, 0.09);
+  }
+
+  .dress-rule__icon svg,
+  .celebrate-tags svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dress-rule span:last-child {
+    color: #796d5f;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .dress-rule strong {
+    display: block;
+    margin-bottom: 0.12rem;
+    color: #5f5246;
+    font-family: var(--serif, Georgia, 'Times New Roman', serif);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .celebrate-tags {
+    margin-top: 1.65rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem;
+  }
+
+  .celebrate-tags span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0.62rem 0.82rem;
+    border: 1px solid rgba(178, 145, 84, 0.24);
+    border-radius: 999px;
+    color: #79664d;
+    background: rgba(250, 246, 237, 0.84);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .guest-extra {
+    max-width: 500px;
+    margin: 1.65rem auto 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(178, 145, 84, 0.18);
+  }
+
+  .guest-extra > span {
+    color: #9c793d;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .guest-extra ul {
+    margin: 0.8rem 0 0;
+    padding-left: 1.2rem;
+    color: #776c60;
+    text-align: left;
+  }
+
+  .guest-extra li + li {
+    margin-top: 0.45rem;
+  }
+
+  @media (max-width: 860px) {
+    .guest-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .guest-details {
+      padding: 4.25rem 0.75rem;
+    }
+
+    .guest-details::before {
+      inset: 0.45rem;
+    }
+
+    .guest-header h2 {
+      font-size: clamp(2.45rem, 11vw, 3.45rem);
+    }
+
+    .guest-intro {
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .guest-grid {
+      margin-top: 2.5rem;
+      gap: 0.85rem;
+    }
+
+    .guest-card {
+      padding: 1.75rem 1rem 2rem;
+    }
+
+    .guest-card h3 {
+      font-size: clamp(2rem, 9vw, 2.65rem);
+    }
+
+    .dress-rules {
+      grid-template-columns: 1fr;
+    }
+
+    .dress-rule {
+      padding: 0.9rem;
+    }
+
+    .celebrate-tags {
+      gap: 0.5rem;
+    }
+
+    .celebrate-tags span {
+      padding: 0.58rem 0.72rem;
+      font-size: 0.7rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guest-details * {
+      scroll-behavior: auto !important;
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
