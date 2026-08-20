@@ -104,6 +104,14 @@
       format: 'wide',
       width: 1448,
       height: 1086
+    },
+    {
+      jpg: '/recuerdos-capitulo-1/recuerdo-13.jpg',
+      webp: '/recuerdos-capitulo-1/recuerdo-13.webp',
+      alt: 'Brenda y Edgar junto a dos seres queridos durante la celebración de su boda civil',
+      format: 'wide',
+      width: 1600,
+      height: 900
     }
   ];
 
