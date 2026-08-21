@@ -3,6 +3,7 @@
 
   let clicked = $state(false);
   let showContent = $state(false);
+  let audioElement: HTMLAudioElement;
 
   onMount(() => {
     const url = new URL(window.location.href);
@@ -17,14 +18,32 @@
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   });
   
-  function handleClick() {
+  async function handleClick() {
     if (clicked) return;
+
     clicked = true;
+
+    // El clic de apertura cuenta como interacción del usuario y permite
+    // iniciar el audio en navegadores móviles y de escritorio.
+    try {
+      audioElement.volume = 0.35;
+      await audioElement.play();
+    } catch (error) {
+      console.warn('No fue posible iniciar la música de la invitación:', error);
+    }
+
     setTimeout(() => {
       showContent = true;
     }, 1200);
   }
 </script>
+
+<audio
+  bind:this={audioElement}
+  src="/audio/cancion-boda.mp3"
+  preload="auto"
+  loop
+></audio>
 
 {#if !showContent}
   <div
