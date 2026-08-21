@@ -199,19 +199,50 @@
     return url.toString();
   }
 
-function whatsappMessage(guest: Guest) {
-  const link = invitationUrl(guest);
-  const greeting = `Hola ${guest.fullName}`;
-  const invitationText = guest.invitationMode === 'individual'
-    ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
-    : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
+  const WHATSAPP_WINDOW_NAME = 'bodorrio-whatsapp';
 
-  return `${greeting}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación para conocer todos los detalles: ${link}`;
-}
+  function whatsappMessage(guest: Guest, contact: Contact) {
+    const link = invitationUrl(guest);
+    const greetingName = contact.contactName.trim() || guest.fullName;
+    const invitationText = guest.invitationMode === 'individual'
+      ? 'Edgar y Brenda queremos compartir contigo nuestra invitación de boda.'
+      : 'Edgar y Brenda queremos compartir con ustedes nuestra invitación de boda.';
 
-  function whatsappUrl(guest: Guest) {
-    const phone = guest.invitationMode === 'individual' ? guest.contacts[0]?.phone.replace(/\D/g, '') : '';
-    return `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage(guest))}`;
+    return `Hola ${greetingName}, ${invitationText}\n\nID de invitación: ${guest.invitationCode}\n\nAbre aquí ${guest.invitationMode === 'individual' ? 'tu' : 'su'} invitación para conocer todos los detalles: ${link}`;
+  }
+
+  function whatsappUrl(guest: Guest, contact: Contact) {
+    const phone = contact.phone.replace(/\D/g, '');
+    const message = encodeURIComponent(whatsappMessage(guest, contact));
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    return isMobile
+      ? `https://wa.me/${phone}?text=${message}`
+      : `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
+  }
+
+  function openWhatsApp(guest: Guest, contact: Contact) {
+    error = '';
+    success = '';
+
+    const phone = contact.phone.replace(/\D/g, '');
+    if (phone.length < 11) {
+      error = `El teléfono de ${contact.contactName} no incluye un código de país válido.`;
+      return;
+    }
+
+    const whatsappWindow = window.open(
+      whatsappUrl(guest, contact),
+      WHATSAPP_WINDOW_NAME
+    );
+
+    if (!whatsappWindow) {
+      error = 'El navegador bloqueó la ventana de WhatsApp. Permite ventanas emergentes para este sitio e inténtalo nuevamente.';
+      return;
+    }
+
+    whatsappWindow.focus();
+    success = `Mensaje preparado para ${contact.contactName}. Revisa WhatsApp y presiona Enviar.`;
   }
 
   async function copyInvitation(guest: Guest) {
@@ -278,7 +309,7 @@ function whatsappMessage(guest: Guest) {
             </div>
           {/each}
         </div>
-        {#if invitationMode === 'group' && contacts.length > 1}<small class="field-help">El botón “WhatsApp · Todos” preparará un solo mensaje; en WhatsApp seleccionarás estos contactos para compartirlo.</small>{/if}
+        {#if invitationMode === 'group' && contacts.length > 1}<small class="field-help">Cada contacto tendrá su propio botón de WhatsApp y todos compartirán la misma invitación.</small>{/if}
 
         <fieldset>
           <legend>Tipo de invitación</legend>
@@ -325,7 +356,9 @@ function whatsappMessage(guest: Guest) {
               {/if}
               {#if guest.note}<p class="guest-note">“{guest.note}”</p>{/if}
               <div class="guest-actions">
-                <a href={whatsappUrl(guest)} target="_blank" rel="noopener noreferrer" title={guest.invitationMode === 'group' ? `Selecciona en WhatsApp a: ${guest.contacts.map((contact) => contact.contactName).join(', ')}` : undefined}>{guest.invitationMode === 'individual' ? `WhatsApp · ${guest.contacts[0]?.contactName ?? guest.fullName}` : 'WhatsApp · Todos'}</a>
+                {#each guest.contacts as contact (contact.id ?? contact.phone)}
+                  <button class="whatsapp-action" type="button" onclick={() => openWhatsApp(guest, contact)}>WhatsApp · {contact.contactName}</button>
+                {/each}
                 <button type="button" onclick={() => copyInvitation(guest)}>Copiar enlace</button>
                 <button type="button" onclick={() => editGuest(guest)}>Editar</button>
                 {#if guest.isActive && guest.invitationType === 'reception' && guest.status !== 'pending' && guest.allowedPasses > guest.confirmedPasses}
@@ -421,8 +454,8 @@ function whatsappMessage(guest: Guest) {
   .ceremony-label { padding: .65rem; background: #f0f4ed; }
   .guest-note { font-family: var(--serif); font-style: italic; }
   .guest-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .85rem; }
-  .guest-actions a, .guest-actions button { min-height: 34px; padding: .45rem .65rem; border: 1px solid rgba(70,80,68,.2); background: transparent; color: var(--sage-dark); cursor: pointer; font: inherit; font-size: .68rem; text-decoration: none; }
-  .guest-actions a { border-color: #315f48; background: #315f48; color: white; }
+  .guest-actions button { min-height: 34px; padding: .45rem .65rem; border: 1px solid rgba(70,80,68,.2); background: transparent; color: var(--sage-dark); cursor: pointer; font: inherit; font-size: .68rem; }
+  .guest-actions .whatsapp-action { border-color: #315f48; background: #315f48; color: white; }
   .guest-actions .release-button { border-color: var(--gold); color: #7a612e; }
   .empty-state { padding: 4rem 1rem; color: var(--muted); text-align: center; }
   @media (max-width: 980px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .workspace-grid { grid-template-columns: 1fr; } .form-panel { position: static; } }
